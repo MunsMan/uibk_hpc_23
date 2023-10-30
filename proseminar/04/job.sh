@@ -12,4 +12,4 @@
 #SBATCH --exclusive
 
 module load openmpi/3.1.6-gcc-12.2.0-d2gmn55
-mpiexec ./a.out 768
+mpiexec perf stat ./build/heat_stencil_1D_mpi 2048
