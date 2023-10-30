@@ -9,7 +9,7 @@ pre:
 
 
 .PHONY: all
-all: pre heat_stencil_1D_mpi.c heat_stencil_2D_mpi_old.c heat_stencil_2D_mpi_opt.c heat_stencil_2D_seq.c
+all: pre heat_stencil_1D_mpi heat_stencil_2D_mpi_old heat_stencil_2D_mpi_opt heat_stencil_2D_seq
 
 
 heat_stencil_2D_seq: heat_stencil_2D_seq.c
