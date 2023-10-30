@@ -119,6 +119,17 @@ value_t ta = idY == 0 && j == 1 ? tc : A[INDEX(i, j - 1)];
 ```
 which indicates that if we could remove the checks in this ternary this would lead to improved performance.
 
+#### gprof
+
+**As with the 1D version this was done on a local machine.**
+
+In order to generate the gprof report 4 ranks were used with `N=420` (only 4 ranks because the local machine only has 4 cores). 
+
+![gpref output](./images/2d.png)
+
+This report from `pgrof` suggests a similar picture as the `perf report` output.
+While a lot of time is spent in the calculations almost 8% are spent on polling which is just waiting for the messages from the other MPI ranks. Reading and writing to buffers still takes up quite a bit of time.
+
 # Optimizations
 In the process of analyzing and optimizing the 2D heat stencil application, we observed that a considerable portion of the runtime is consumed by MPI communication. To address this performance bottleneck, the primary strategy for optimization was to leverage MPI's internal functionalities specifically designed for enhancing communication efficiency. By initially employing MPI_Cart_create for optimal rank placement and subsequently adopting MPI_Neighbors_alltoallw for streamlined halo exchange, significant improvements in performance were achieved.
 
