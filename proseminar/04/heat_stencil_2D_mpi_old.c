@@ -155,9 +155,6 @@ int main(int argc, char** argv) {
 
 	if(myRank == 0) {
 
-    for(int i=0;i<bufferLengthX;i++){
-      printf("%f ",A[INDEX(i,40)]);
-    }
 		// Prepare a temporary array to hold data from each process
 		Vector temp = createVector(rankLengthX * rankLengthY);
 
