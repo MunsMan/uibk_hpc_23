@@ -170,12 +170,21 @@ New:
 ```c
 new_row[i] = (tl + tr + tb + ta) / 4;
 ```
+#### Data Type Conversion
+
+Another major avenue for performance enhancement was the switch from using `double` to `uint32` for the cell values in the grid. By multiplying every value by 100000 and storing them as `uint32`, we were able to make several improvements:
+
+The usage of `uint32` over `double` accelerated the arithmetic calculations. This is because operations on integer types are generally faster than those on floating-point numbers and instead of division we can just shift the values.
+
+Switching to a 32-bit data type effectively halved the size of the data packets sent through MPI. This led to a reduction in the time spent in communication, which was one of the major bottlenecks identified in the initial profiling.
+
+After the calculations were complete, we divided the `uint32` values by 100000 to bring them back to their original scale. The loss of precision was deemed acceptable for the problem at hand.
 
 ## Final Wall time and Speedup
 
 This resulted in the following Wall time:
-`1.376 seconds` for N=768 and T=76800
+`1.073 seconds` for N=768 and T=76800
 
-Considering the Wall time of the sequential version: `122.895` we arrive at a speedup of: `89.313`
+Considering the Wall time of the sequential version: `122.895` we arrive at a speedup of: `114.534`
 
-If we want to calculate Wall time for `T=768*768*100`, we chose to only run with `T=768*768` and then extrapolate the value since it already for the lower number of iterations takes `10.561` seconds. This results in a Wall time for `T=768*768*100` of `1056.11`.
+If we want to calculate Wall time for `T=768*768*100`, we get a resulting Wall time of `896.603`. 
