@@ -28,12 +28,13 @@ int main(int argc, char** argv) {
 	MPI_Type_commit(&newType);
 
 	// 2) Use MPI Sendrecv to perform a ring communication
-	MPI_Sendrecv(sBuf, 1, newType, (rank + 1) % size, 123, rBuf, sizeof(int) * 2, MPI_BYTE,
-	             (rank = 1 + size) % size, 123, MPI_COMM_WORLD, &status);
+	MPI_Sendrecv(sBuf, 1, newType, (rank + 1) % size, 123, rBuf, sizeof(int) * 2, MPI_INT,
+	             (rank - 1 + size) % size, 123, MPI_COMM_WORLD, &status);
 
+  MPI_Request request;
 	// 3) Use MPI Send and MPI Recv to perform a ring communication
-	MPI_Send(sBuf, 1, newType, (rank + 1) % size, 456, MPI_COMM_WORLD);
-	MPI_Recv(rBuf, sizeof(int) * 2, MPI_BYTE, (rank = 1 + size) % size, 456, MPI_COMM_WORLD,
+	MPI_Isend(sBuf, 1, newType, (rank + 1) % size, 456, MPI_COMM_WORLD, &request);
+	MPI_Recv(rBuf, sizeof(int) * 2, MPI_BYTE, (rank - 1 + size) % size, 456, MPI_COMM_WORLD,
 	         &status);
 
 	// Say bye bye
