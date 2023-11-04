@@ -4,3 +4,5 @@
 notes.md
 .ltex/
 **build/
+.direnv/
+.clangd
