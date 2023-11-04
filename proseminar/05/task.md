@@ -85,3 +85,16 @@ Using prebuild /home/cb76/cb761032/.cache/must/prebuilds/b62ed64425437f6c696454b
 ### Old programs
 
 Unfortunately all old programs which did not really work were eventully deleted and we also could not really get `MUST` to run while complier flags were already used before this exercise.
+
+### Clang
+
+Using Clang on my local machine showed an addtional warning in the `example_1.c`.
+
+```
+example_1.c:16:11: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+        int data[count];   /* data buffers */
+                 ^~~~~
+1 warning generated.
+```
+
+Which can be resolve by using a macro to define the variable.
