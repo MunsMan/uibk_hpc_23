@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define epsilon \
+	1e-6 // This is the softening length,to prevent the force from blowing up as the distance goes
+	     // to zero.
+
 #define NUM_PARTICLES 5000
 #define NUM_STEPS 100
 #define G 1
@@ -17,8 +21,26 @@ typedef struct {
 	double mass;
 } Particle;
 
-void initialize_particles(Particle particles[], int num_particles) {
-	for(int i = 0; i < num_particles; i++) {
+void init_test_setup(Particle particles[]) {
+	particles[0].position.x = 50;
+	particles[0].position.y = 50;
+	particles[0].position.z = 50;
+	particles[0].velocity.x = 0;
+	particles[0].velocity.y = 0;
+	particles[0].velocity.z = 0;
+	particles[0].mass = 1000;
+
+	particles[1].position.x = 10;
+	particles[1].position.y = 10;
+	particles[1].position.z = 50;
+	particles[1].velocity.x = 1;
+	particles[1].velocity.y = 1;
+	particles[1].velocity.z = 1;
+	particles[1].mass = 1;
+}
+
+void initialize_particles(Particle particles[]) {
+	for(int i = 0; i < NUM_PARTICLES; i++) {
 		particles[i].position.x = (double)rand() / RAND_MAX * 100;
 		particles[i].position.y = (double)rand() / RAND_MAX * 100;
 		particles[i].position.z = (double)rand() / RAND_MAX * 100;
@@ -39,19 +61,17 @@ void move_particles(Particle particles[]) {
 				distance.y = particles[j].position.y - particles[i].position.y;
 				distance.z = particles[j].position.z - particles[i].position.z;
 
-				double distanceSquared =
-				    distance.x * distance.x + distance.y * distance.y + distance.z * distance.z;
+				double distanceSquared = distance.x * distance.x + distance.y * distance.y +
+				                         distance.z * distance.z + epsilon;
 				double F = G * particles[i].mass * particles[j].mass / distanceSquared;
 
-				double distanceMagnitude = sqrt(distanceSquared);
-				Vector3D unit_distance;
-				unit_distance.x = distance.x / distanceMagnitude;
-				unit_distance.y = distance.y / distanceMagnitude;
-				unit_distance.z = distance.z / distanceMagnitude;
+				double distanceMagnitude = sqrt(distanceSquared - epsilon);
 
-				force.x += F * unit_distance.x;
-				force.y += F * unit_distance.y;
-				force.z += F * unit_distance.z;
+				if(distanceMagnitude > 1e-10) {
+					force.x += F * (distance.x / distanceMagnitude);
+					force.y += F * (distance.y / distanceMagnitude);
+					force.z += F * (distance.z / distanceMagnitude);
+				}
 			}
 		}
 		particles[i].velocity.x += force.x / particles[i].mass;
@@ -73,7 +93,8 @@ int main() {
 	}
 
 	srand(time(NULL));
-	initialize_particles(particles, NUM_PARTICLES);
+	initialize_particles(particles);
+	// init_test_setup(particles);
 
 	clock_t start = clock();
 
