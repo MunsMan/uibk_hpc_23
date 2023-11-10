@@ -7,7 +7,7 @@
 
 2. **Data Structures:**
 
-   Useing data structures that can take advantage of spatial locality, like octrees (used in Barnes-Hut)
+   Using data structures that can take advantage of spatial locality, like octrees (used in Barnes-Hut)
 
 3. **Mathematical Optimizations:**
 

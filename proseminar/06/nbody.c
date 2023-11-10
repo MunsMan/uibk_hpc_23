@@ -67,11 +67,12 @@ void move_particles(Particle particles[]) {
 
 				double distanceMagnitude = sqrt(distanceSquared - epsilon);
 
-				if(distanceMagnitude > 1e-10) {
-					force.x += F * (distance.x / distanceMagnitude);
-					force.y += F * (distance.y / distanceMagnitude);
-					force.z += F * (distance.z / distanceMagnitude);
+				if(distanceMagnitude < 1e-10) {
+					distanceMagnitude = 1e-10;
 				}
+				force.x += F * (distance.x / distanceMagnitude);
+				force.y += F * (distance.y / distanceMagnitude);
+				force.z += F * (distance.z / distanceMagnitude);
 			}
 		}
 		particles[i].velocity.x += force.x / particles[i].mass;
