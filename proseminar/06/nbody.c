@@ -85,7 +85,7 @@ void move_particles(Particle particles[]) {
 	}
 }
 
-int main() {
+int main(void) {
 	Particle particles[NUM_PARTICLES];
 	FILE* file = fopen("data.dat", "w");
 	if(!file) {

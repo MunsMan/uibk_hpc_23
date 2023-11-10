@@ -1,3 +1,4 @@
+CC=gcc
 CC_FLAGS=-O3 -std=gnu11 -Wall -Wextra -pedantic -lm
 
 .PHONY: all
@@ -9,4 +10,4 @@ nbody: nbody.c
 
 .PHONY: clean
 clean:
-@rm nbody
+	@rm nbody
