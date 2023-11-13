@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 Octree* init_tree(Vector3D max_position, Vector3D min_position) {
-
 	Octree* octree = malloc(sizeof(Octree));
 	octree->max_position = max_position;
 	octree->min_position = min_position;
@@ -100,6 +99,19 @@ CenterGravity add_cg(CenterGravity cg1, CenterGravity cg2) {
 	return cg;
 }
 
+void print_tree(Octree* octree) {
+	printf("Node (%f,%f,%f)\n", octree->center_gravity.position.x,
+	       octree->center_gravity.position.y, octree->center_gravity.position.z);
+	if(octree->num_children) {
+		printf("Children:\n");
+		for(int i = 0; i < 8; i++) {
+			if(octree->children[i]) {
+				print_tree(octree->children[i]);
+			}
+		}
+	}
+}
+
 int main(void) {
 	Particle particles[8] = { { { .x = 1, .y = 1, .z = 1 }, { 0, 0, 0 }, 1 },
 		                      { { .x = 1, .y = 1, .z = -1 }, { 0, 0, 0 }, 1 },
@@ -115,5 +127,6 @@ int main(void) {
 	for(int i = 0; i < 8; i++) {
 		insert(octree, &particles[i]);
 	}
+	print_tree(octree);
 	return EXIT_SUCCESS;
 }

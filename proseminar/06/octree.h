@@ -33,3 +33,4 @@ Octree* init_tree(Vector3D max_position, Vector3D min_position);
 CenterGravity insert(Octree* octree, Particle* particle);
 uint8_t quadrant(Octree* octree, Particle* particle);
 CenterGravity add_cg(CenterGravity cg1, CenterGravity cg2);
+void print_tree(Octree* octree);
