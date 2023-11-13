@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -20,6 +21,12 @@ typedef struct {
 	Vector3D velocity;
 	double mass;
 } Particle;
+
+typedef struct {
+	Vector3D max_position;
+	Vector3D min_position;
+	Particle* particle;
+} Wolrd;
 
 void init_test_setup(Particle particles[]) {
 	particles[0].position.x = 50;
@@ -87,6 +94,9 @@ void move_particles(Particle particles[]) {
 
 int main(void) {
 	Particle particles[NUM_PARTICLES];
+	Wolrd world = { .max_position = { 100.0, 100.0, 100.0 },
+		            .min_position = { 0.0, 0.0, 0.0 },
+		            .particle = particles };
 	FILE* file = fopen("data.dat", "w");
 	if(!file) {
 		printf("Error opening file\n");
@@ -101,11 +111,11 @@ int main(void) {
 
 	for(int step = 0; step < NUM_STEPS; step++) {
 		move_particles(particles);
-		for(int i = 0; i < NUM_PARTICLES; i++) {
-			fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y,
-			        particles[i].position.z);
-		}
-		fprintf(file, "\n\n");
+		/* for(int i = 0; i < NUM_PARTICLES; i++) { */
+		/* 	fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y, */
+		/* 	        particles[i].position.z); */
+		/* } */
+		/* fprintf(file, "\n\n"); */
 	}
 
 	clock_t end = clock();
