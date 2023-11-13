@@ -18,9 +18,6 @@
    Manually unrolling loops to increase instruction-level parallelism and reduce loop overhead.
    Employ SIMD (Single Instruction, Multiple Data) vectorization to compute forces on multiple particles simultaneously if the hardware supports it.
 
-5. **Memory Access Patterns:**
-   Optimize memory access patterns to increase cache hits. For instance, storing particle data in structures of arrays format instead of arrays of structures can lead to better vectorization and fewer cache misses.
-
 ### Parallelization Strategies with MPI:
 
 - **Spatial decomposition:** Divide the simulation space into smaller subdomains and assign each to a different MPI process. Each process is responsible for computing interactions within its subdomain and with nearby particles in adjacent subdomains.

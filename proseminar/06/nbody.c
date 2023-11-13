@@ -3,89 +3,18 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define epsilon \
-	1e-6 // This is the softening length,to prevent the force from blowing up as the distance goes
-	     // to zero.
-
-#define NUM_PARTICLES 5000
-#define NUM_STEPS 100
 #define G 1
 
 typedef struct {
 	double x, y, z;
 } Vector3D;
 
-typedef struct {
-	Vector3D position;
-	Vector3D velocity;
-	double mass;
-} Particle;
-
-void init_test_setup(Particle particles[]) {
-	particles[0].position.x = 50;
-	particles[0].position.y = 50;
-	particles[0].position.z = 50;
-	particles[0].velocity.x = 0;
-	particles[0].velocity.y = 0;
-	particles[0].velocity.z = 0;
-	particles[0].mass = 1000;
-
-	particles[1].position.x = 10;
-	particles[1].position.y = 10;
-	particles[1].position.z = 50;
-	particles[1].velocity.x = 1;
-	particles[1].velocity.y = 1;
-	particles[1].velocity.z = 1;
-	particles[1].mass = 1;
-}
-
-void initialize_particles(Particle particles[]) {
-	for(int i = 0; i < NUM_PARTICLES; i++) {
-		particles[i].position.x = (double)rand() / RAND_MAX * 100;
-		particles[i].position.y = (double)rand() / RAND_MAX * 100;
-		particles[i].position.z = (double)rand() / RAND_MAX * 100;
-		particles[i].velocity.x = 0;
-		particles[i].velocity.y = 0;
-		particles[i].velocity.z = 0;
-		particles[i].mass = (double)rand() / RAND_MAX + 1;
+int main(int argc, char const* argv[]) {
+	if(argc < 2) {
+		printf("Please run with: ./nbody <numParticles> <iterations>\n");
+		exit(1);
 	}
-}
 
-void move_particles(Particle particles[]) {
-	for(int i = 0; i < NUM_PARTICLES; i++) {
-		Vector3D force = { 0, 0, 0 };
-		for(int j = 0; j < NUM_PARTICLES; j++) {
-			if(i != j) {
-				Vector3D distance;
-				distance.x = particles[j].position.x - particles[i].position.x;
-				distance.y = particles[j].position.y - particles[i].position.y;
-				distance.z = particles[j].position.z - particles[i].position.z;
-
-				double distanceSquared = distance.x * distance.x + distance.y * distance.y +
-				                         distance.z * distance.z + epsilon;
-				double F = G * particles[i].mass * particles[j].mass / distanceSquared;
-
-				double distanceMagnitude = sqrt(distanceSquared - epsilon);
-
-				if(distanceMagnitude > 1e-10) {
-					force.x += F * (distance.x / distanceMagnitude);
-					force.y += F * (distance.y / distanceMagnitude);
-					force.z += F * (distance.z / distanceMagnitude);
-				}
-			}
-		}
-		particles[i].velocity.x += force.x / particles[i].mass;
-		particles[i].velocity.y += force.y / particles[i].mass;
-		particles[i].velocity.z += force.z / particles[i].mass;
-
-		particles[i].position.x += particles[i].velocity.x;
-		particles[i].position.y += particles[i].velocity.y;
-		particles[i].position.z += particles[i].velocity.z;
-	}
-}
-
-int main() {
-	Particle particles[NUM_PARTICLES];
 	FILE* file = fopen("data.dat", "w");
 	if(!file) {
 		printf("Error opening file\n");
@@ -93,16 +22,76 @@ int main() {
 	}
 
 	srand(time(NULL));
-	initialize_particles(particles);
-	// init_test_setup(particles);
+	int numParticles = atoi(argv[1]);
+	int iterations = atoi(argv[2]);
+
+	Vector3D* forces = malloc(numParticles * sizeof(Vector3D));
+	Vector3D* positions = malloc(numParticles * sizeof(Vector3D));
+	Vector3D* velocities = malloc(numParticles * sizeof(Vector3D));
+	double* masses = malloc(numParticles * sizeof(double));
+
+	double* preFactors = malloc(numParticles * sizeof(double));
+	double* massInverses = malloc(numParticles * sizeof(double));
+
+	for(int i = 0; i < numParticles; i++) {
+		positions[i].x = (double)rand() / RAND_MAX * 100;
+		positions[i].y = (double)rand() / RAND_MAX * 100;
+		positions[i].z = (double)rand() / RAND_MAX * 100;
+
+		velocities[i].x = 0;
+		velocities[i].y = 0;
+		velocities[i].z = 0;
+
+		masses[i] = (double)rand() / RAND_MAX + 1;
+    preFactors[i] = -G * masses[i];
+    massInverses[i] = 1 / masses[i];
+	}
 
 	clock_t start = clock();
 
-	for(int step = 0; step < NUM_STEPS; step++) {
-		move_particles(particles);
-		for(int i = 0; i < NUM_PARTICLES; i++) {
-			fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y,
-			        particles[i].position.z);
+	for(int i = 0; i < iterations; i++) {
+
+		for(int n = 0; n < numParticles; n++) {
+			forces[n] = (Vector3D){ 0, 0, 0 };
+		}
+
+		for(int n = 0; n < numParticles; n++) {
+			for(int m = 0; m < numParticles; m++) {
+				if(m <= n) {
+					continue;
+				}
+
+				double xDiff = positions[n].x - positions[m].x;
+				double yDiff = positions[n].y - positions[m].y;
+				double zDiff = positions[n].z - positions[m].z;
+
+				double dist = sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
+				double distCubed = dist * dist * dist;
+
+				double forceScaled = preFactors[n] * masses[m] / distCubed;
+
+				double forceX = forceScaled * xDiff;
+				double forceY = forceScaled * yDiff;
+				double forceZ = forceScaled * zDiff;
+
+				forces[n].x += forceX;
+				forces[n].y += forceY;
+				forces[n].z += forceZ;
+				forces[m].x -= forceX;
+				forces[m].y -= forceY;
+				forces[m].z -= forceZ;
+			}
+		}
+
+		for(int n = 0; n < numParticles; n++) {
+			velocities[n].x += forces[n].x * massInverses[n];
+			velocities[n].y += forces[n].y * massInverses[n];
+			velocities[n].z += forces[n].z * massInverses[n];
+			positions[n].x += velocities[n].x;
+			positions[n].y += velocities[n].y;
+			positions[n].z += velocities[n].z;
+
+			fprintf(file, "%f %f %f\n", positions[n].x, positions[n].y, positions[n].z);
 		}
 		fprintf(file, "\n\n");
 	}
@@ -110,6 +99,10 @@ int main() {
 	clock_t end = clock();
 	printf("Simulation time: %f seconds\n", ((double)(end - start)) / CLOCKS_PER_SEC);
 
-	fclose(file);
-	return 0;
+	free(forces);
+	free(positions);
+	free(velocities);
+	free(masses);
+
+	return EXIT_SUCCESS;
 }
