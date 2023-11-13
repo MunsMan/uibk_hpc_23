@@ -1,3 +1,5 @@
+Team collaboration of Hendrik Munske and Florian Neururer
+
 ### Optimization Methods:
 
 1. **Algorithmic Optimizations:**
