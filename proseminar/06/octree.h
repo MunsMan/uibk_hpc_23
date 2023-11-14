@@ -37,6 +37,7 @@ CenterGravity insert(Octree* octree, Particle* particle);
 uint8_t quadrant(Octree* octree, Particle* particle);
 void print_tree(Octree* octree, int depth);
 bool is_particle(Octree* octree);
+void free_tree(Octree* octree);
 
 CenterGravity add_cg(CenterGravity cg1, CenterGravity cg2);
 double cg_effect(CenterGravity cg1, CenterGravity cg2);
@@ -66,7 +67,7 @@ typedef struct {
 	ListNode* last;
 } List;
 
-List* init_list();
+List* init_list(void);
 ListNode* init_node(void* element);
 List* append(List* list, void* element);
 List* concat(List* list1, List* list2);

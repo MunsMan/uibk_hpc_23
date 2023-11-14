@@ -13,6 +13,17 @@ Octree* init_tree(Vector3D max_position, Vector3D min_position) {
 	octree->particle = NULL;
 	return octree;
 }
+
+void free_tree(Octree* octree) {
+	for(int i = 0; i < MAX_NUM_CHILDREN; i++) {
+		if(octree->children[i]) {
+			free_tree(octree->children[i]);
+		}
+	}
+	free(octree->children);
+	free(octree);
+}
+
 Octree* new_tree(uint8_t quad, Vector3D max_position, Vector3D min_position, Octree* parent) {
 	Octree* octree = malloc(sizeof(Octree));
 	if(!octree) {
@@ -20,18 +31,18 @@ Octree* new_tree(uint8_t quad, Vector3D max_position, Vector3D min_position, Oct
 		exit(EXIT_FAILURE);
 	}
 	Vector3D min = {
-		.x = (quad & 0b1) ? (max_position.x - min_position.x) / 2 + min_position.x : min_position.x,
-		.y = (quad >> 1 & 0b1) ? (max_position.y - min_position.y) / 2 + min_position.y
-		                       : min_position.y,
-		.z = (quad >> 2 & 0b1) ? (max_position.z - min_position.z) / 2 + min_position.z
-		                       : min_position.z,
+		.x = (quad & 1) ? (max_position.x - min_position.x) / 2 + min_position.x : min_position.x,
+		.y = (quad >> 1 & 1) ? (max_position.y - min_position.y) / 2 + min_position.y
+		                     : min_position.y,
+		.z = (quad >> 2 & 1) ? (max_position.z - min_position.z) / 2 + min_position.z
+		                     : min_position.z,
 	};
 	Vector3D max = {
-		.x = (quad & 0b1) ? max_position.x : (max_position.x - min_position.x) / 2 + min_position.x,
-		.y = (quad >> 1 & 0b1) ? max_position.y
-		                       : (max_position.y - min_position.y) / 2 + min_position.y,
-		.z = (quad >> 2 & 0b1) ? max_position.z
-		                       : (max_position.z - min_position.z) / 2 + min_position.z,
+		.x = (quad & 1) ? max_position.x : (max_position.x - min_position.x) / 2 + min_position.x,
+		.y = (quad >> 1 & 1) ? max_position.y
+		                     : (max_position.y - min_position.y) / 2 + min_position.y,
+		.z = (quad >> 2 & 1) ? max_position.z
+		                     : (max_position.z - min_position.z) / 2 + min_position.z,
 	};
 	octree->min_position = min;
 	octree->max_position = max;
@@ -139,8 +150,13 @@ void print_tree(Octree* octree, int depth) {
 	for(int i = 0; i < depth; i++) {
 		printf("\t");
 	}
-	printf("Node - %p - (%f,%f,%f)\n", octree, octree->center_gravity.position.x,
-	       octree->center_gravity.position.y, octree->center_gravity.position.z);
+	if(is_particle(octree)) {
+		printf("Leaf - %p - (%f,%f,%f)\n", (void*)octree, octree->particle->position.x,
+		       octree->particle->position.y, octree->particle->position.z);
+	} else {
+		printf("Node - %p - (%f,%f,%f)\n", (void*)octree, octree->center_gravity.position.x,
+		       octree->center_gravity.position.y, octree->center_gravity.position.z);
+	}
 	if(octree->num_children) {
 		for(int i = 0; i < depth; i++) {
 			printf("\t");
@@ -168,9 +184,9 @@ Octree* down(Octree* octree) {
 		}
 	}
 	return NULL;
-};
+}
 
-Octree* next(Octree* octree) {
+Octree* iter_next(Octree* octree) {
 	if(!octree->parent) {
 		return NULL;
 	}
@@ -184,7 +200,7 @@ Octree* next(Octree* octree) {
 			return down(octree->parent->children[i]);
 		}
 	};
-	return next(octree->parent);
+	return iter_next(octree->parent);
 }
 
 IteratorState* iterator_leaf_init(Octree* octree) {
@@ -196,7 +212,7 @@ IteratorState* iterator_leaf_init(Octree* octree) {
 Octree* iterator_leaf_next(IteratorState* state) {
 	Octree* current = state->position;
 	if(current) {
-		state->position = next(current);
+		state->position = iter_next(current);
 	}
 	return current;
 }
@@ -205,7 +221,7 @@ bool iterator_leaf_has_next(IteratorState* state) {
 	return state->position;
 }
 
-List* init_list() {
+List* init_list(void) {
 	List* list = malloc(sizeof(List));
 	list->size = 0;
 	list->first = NULL;
@@ -242,6 +258,7 @@ List* concat(List* list1, List* list2) {
 		return list1;
 	}
 	list1->last->next = list2->first;
+	list2->first->prev = list1->last;
 	list1->last = list2->last;
 	list1->size += list2->size;
 	free(list2);
@@ -251,8 +268,8 @@ List* concat(List* list1, List* list2) {
 void list_free(List* list) {
 	ListNode* node = list->first;
 	while(node) {
-		node = node->next;
 		free(node->prev);
+		node = node->next;
 	}
 	free(list);
 }
@@ -296,37 +313,4 @@ List* effecting_neigbours(Octree* octree, double threshold_effect) {
 	}
 	Octree* upperBound = move_up(octree->parent, octree, threshold_effect);
 	return collect_down(upperBound, octree, threshold_effect);
-}
-
-int main(void) {
-	Particle particles[12] = { { { .x = 1, .y = 1, .z = 1 }, { 0, 0, 0 }, 1 },
-		                       { { .x = 1, .y = 1, .z = 0 }, { 0, 0, 0 }, 1 },
-		                       { { .x = 1, .y = 1, .z = -1 }, { 0, 0, 0 }, 1 },
-		                       { { .x = 1, .y = -1, .z = 1 }, { 0, 0, 0 }, 1 },
-		                       { { .x = 1, .y = -1, .z = 0 }, { 0, 0, 0 }, 1 },
-		                       { { .x = 1, .y = -1, .z = -1 }, { 0, 0, 0 }, 1 },
-		                       { { .x = -1, .y = 1, .z = 1 }, { 0, 0, 0 }, 1 },
-		                       { { .x = -1, .y = 1, .z = 0 }, { 0, 0, 0 }, 1 },
-		                       { { .x = -1, .y = 1, .z = -1 }, { 0, 0, 0 }, 1 },
-		                       { { .x = -1, .y = -1, .z = 1 }, { 0, 0, 0 }, 1 },
-		                       { { .x = -1, .y = -1, .z = 0 }, { 0, 0, 0 }, 1 },
-		                       { { .x = -1, .y = -1, .z = -1 }, { 0, 0, 0 }, 1 } };
-	Vector3D max_position = { 1, 1, 1 };
-	Vector3D min_position = { -1, -1, -1 };
-	Octree* octree = init_tree(max_position, min_position);
-	for(int i = 0; i < 12; i++) {
-		insert(octree, &particles[i]);
-	}
-	print_tree(octree, 0);
-	printf("\n\n");
-	IteratorState* state = iterator_leaf_init(octree);
-	printf("%p\n", state->position);
-	while(iterator_leaf_has_next(state)) {
-		Octree* node = iterator_leaf_next(state);
-		printf("Node - %p - (%f,%f,%f)\n", node, node->center_gravity.position.x,
-		       node->center_gravity.position.y, node->center_gravity.position.z);
-		List* list = effecting_neigbours(node, 1.5);
-		printf("%d\n", list->size);
-	}
-	return EXIT_SUCCESS;
 }

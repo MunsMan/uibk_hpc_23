@@ -4,29 +4,15 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "octree.h"
+
 #define epsilon \
 	1e-6 // This is the softening length,to prevent the force from blowing up as the distance goes
 	     // to zero.
 
-#define NUM_PARTICLES 5000
+#define NUM_PARTICLES 100
 #define NUM_STEPS 100
 #define G 1
-
-typedef struct {
-	double x, y, z;
-} Vector3D;
-
-typedef struct {
-	Vector3D position;
-	Vector3D velocity;
-	double mass;
-} Particle;
-
-typedef struct {
-	Vector3D max_position;
-	Vector3D min_position;
-	Particle* particle;
-} Wolrd;
 
 void init_test_setup(Particle particles[]) {
 	particles[0].position.x = 50;
@@ -92,11 +78,45 @@ void move_particles(Particle particles[]) {
 	}
 }
 
+void move_particle(Octree* particle, List* neigbours) {
+	Vector3D force = { 0, 0, 0 };
+	ListNode* node = neigbours->first;
+	CenterGravity* neigbour;
+	while(node) {
+		neigbour = node->element;
+		if(neigbour == &particle->center_gravity) {
+			node = node->next;
+			continue;
+		}
+		Vector3D distance_vector = vec_sub(neigbour->position, particle->center_gravity.position);
+
+		double distanceSquared = distance_vector.x * distance_vector.x +
+		                         distance_vector.y * distance_vector.y +
+		                         distance_vector.z * distance_vector.z + epsilon;
+		double F = G * particle->center_gravity.mass * neigbour->mass / distanceSquared;
+
+		double distanceMagnitude = sqrt(distanceSquared - epsilon);
+
+		if(distanceMagnitude < 1e-10) {
+			distanceMagnitude = 1e-10;
+		}
+		force.x += F * (distance_vector.x / distanceMagnitude);
+		force.y += F * (distance_vector.y / distanceMagnitude);
+		force.z += F * (distance_vector.z / distanceMagnitude);
+		node = node->next;
+	}
+	Particle* p = particle->particle;
+	p->velocity.x += force.x / p->mass;
+	p->velocity.y += force.y / p->mass;
+	p->velocity.z += force.z / p->mass;
+
+	p->position.x += p->velocity.x;
+	p->position.y += p->velocity.y;
+	p->position.z += p->velocity.z;
+}
+
 int main(void) {
 	Particle particles[NUM_PARTICLES];
-	Wolrd world = { .max_position = { 100.0, 100.0, 100.0 },
-		            .min_position = { 0.0, 0.0, 0.0 },
-		            .particle = particles };
 	FILE* file = fopen("data.dat", "w");
 	if(!file) {
 		printf("Error opening file\n");
@@ -109,9 +129,28 @@ int main(void) {
 
 	clock_t start = clock();
 
+	Vector3D max_position = { .x = 100, .y = 100, .z = 100 };
+	Vector3D min_position = { .x = 0, .y = 0, .z = 0 };
+
 	for(int step = 0; step < NUM_STEPS; step++) {
-		move_particles(particles);
+
+		Octree* octree = init_tree(max_position, min_position);
 		for(int i = 0; i < NUM_PARTICLES; i++) {
+			insert(octree, &(particles[i]));
+		}
+		IteratorState* state = iterator_leaf_init(octree);
+		while(iterator_leaf_has_next(state)) {
+			Octree* node = iterator_leaf_next(state);
+			List* neigbours = effecting_neigbours(node, 1);
+			move_particle(node, neigbours);
+			list_free(neigbours);
+		}
+		free_tree(octree);
+		free(state);
+		printf("%f %f %f\n", particles[0].position.x, particles[0].position.y,
+		       particles[0].position.z);
+		for(int i = 0; i < NUM_PARTICLES; i++) {
+
 			fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y,
 			        particles[i].position.z);
 		}
