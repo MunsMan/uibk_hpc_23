@@ -111,11 +111,11 @@ int main(void) {
 
 	for(int step = 0; step < NUM_STEPS; step++) {
 		move_particles(particles);
-		/* for(int i = 0; i < NUM_PARTICLES; i++) { */
-		/* 	fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y, */
-		/* 	        particles[i].position.z); */
-		/* } */
-		/* fprintf(file, "\n\n"); */
+		for(int i = 0; i < NUM_PARTICLES; i++) {
+			fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y,
+			        particles[i].position.z);
+		}
+		fprintf(file, "\n\n");
 	}
 
 	clock_t end = clock();
