@@ -1,25 +1,22 @@
 CC := gcc
-CC_FLAGS := -O3 -ggdb -std=gnu11 -Wall -Wextra -pedantic -lm -Wgnu-binary-literal
+CC_FLAGS := -O3 -ggdb -std=gnu11 -Wall -Wextra -pedantic -lm
 
 # List the source files
-SRC = nbody.c octree.c
+SRC = test.c
 
 # List of Header files
-INCLUDE = octree.h
-
-# Derive the object file names from source files
-OBJ = $(SRC:.c=.o)
+INCLUDE =
 
 # The final executable
-TARGET = nbody
+TARGET = test
 
 # Default target
 all: $(TARGET)
 
 # Rule to build the executable
 $(TARGET): $(SRC)
-	$(CC) $(CC_FLAGS) -I$(INCLUDE) -o $@ $^
+	$(CC) $(CC_FLAGS) -o $@ $^
 
 # Clean up generated files
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -f $(TARGET)
