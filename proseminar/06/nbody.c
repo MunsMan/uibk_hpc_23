@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define G 1 // 6.67430e-11 // gravitational constant
-#define THETA 0.6
+#define G 1       // 6.67430e-11 // gravitational constant
+#define THETA 0.6 // Efficency Parameter
 #define NUM_PARTICLES 5000
 #define NUM_STEPS 100
 
@@ -221,4 +221,3 @@ int main(void) {
 
 	return EXIT_SUCCESS;
 }
-
