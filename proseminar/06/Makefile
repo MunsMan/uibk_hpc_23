@@ -2,13 +2,13 @@ CC := gcc
 CC_FLAGS := -O3 -ggdb -std=gnu11 -Wall -Wextra -pedantic -lm
 
 # List the source files
-SRC = test.c
+SRC = nbody.c
 
 # List of Header files
 INCLUDE =
 
 # The final executable
-TARGET = test
+TARGET = nbody
 
 # Default target
 all: $(TARGET)

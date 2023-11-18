@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/include"
+            ],
+            "defines": [],
+            "macFrameworkPath": [
+                "/nix/store/w2vc36964qpm78gxi85x10fkkx2i23yi-swift-corefoundation-unstable-2018-09-14/Library/Frameworks"
+            ],
+            "compilerPath": "/nix/store/2ldr4s30zvv1lnf95g88nr9y14w7nm6h-clang-wrapper-11.1.0/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "macos-clang-x64",
+            "configurationProvider": "ms-vscode.makefile-tools"
+        }
+    ],
+    "version": 4
+}
