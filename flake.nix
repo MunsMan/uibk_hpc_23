@@ -15,6 +15,7 @@
         pkgs = import nixpkgs { inherit system; };
       in
       with pkgs; {
-        devShells.default = mkShell { buildInputs = [ mpi ] ++ darwinInputs; };
+        devShells.default =
+          mkShell { buildInputs = [ mpi gnuplot gdb ] ++ darwinInputs; };
       });
 }
