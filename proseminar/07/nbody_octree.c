@@ -21,8 +21,6 @@ typedef struct {
 	Vector3D velocity;
 } Particle;
 
-MPI_Datatype MPI_PARTICLE;
-
 typedef struct Node {
 	Vector3D center;
 	double size;
@@ -170,8 +168,8 @@ void barnes_hut(Particle particles[], int num_particles, int num_ranks, int my_r
 	Node* root = create_node(center, 2.0 * max_distance);
 
 	build_tree(particles, num_particles, root);
-
-	for(int i = (num_particles / num_ranks) * my_rank; i < num_particles / num_ranks; i++) {
+	int step_width = num_particles / num_ranks;
+	for(int i = step_width * my_rank; i < step_width * (my_rank + 1); i++) {
 		update_force(&particles[i], root);
 		particles[i].position.x += particles[i].velocity.x;
 		particles[i].position.y += particles[i].velocity.y;
@@ -200,7 +198,7 @@ int main(int argc, char* argv[]) {
 	MPI_Type_commit(&MPI_PARTICLE);
 
 	// Initialize particles with random values
-	for(int i = 0; i < NUM_PARTICLES; ++i) {
+	for(int i = 0; i < NUM_PARTICLES; i++) {
 		particles[i].mass = (double)rand() / RAND_MAX + 1;
 		particles[i].position.x = (double)rand() / RAND_MAX * 100;
 		particles[i].position.y = (double)rand() / RAND_MAX * 100;
@@ -209,7 +207,6 @@ int main(int argc, char* argv[]) {
 		particles[i].velocity.y = 0.0;
 		particles[i].velocity.z = 0.0;
 	}
-	MPI_Bcast(particles, NUM_PARTICLES, MPI_PARTICLE, 0, MPI_COMM_WORLD);
 	int step_width = NUM_PARTICLES / num_ranks;
 	clock_t start;
 	if(my_rank == 0) {
@@ -218,22 +215,17 @@ int main(int argc, char* argv[]) {
 	}
 	// Run simulation
 	for(int step = 0; step < NUM_STEPS; step++) {
-		barnes_hut(particles, NUM_PARTICLES, num_ranks, my_rank);
-		if(my_rank != 0) {
-			MPI_Send(&particles[my_rank * step_width], step_width, MPI_PARTICLE, 0, 0,
-			         MPI_COMM_WORLD);
-		} else {
-			for(int i = 1; i < num_ranks; i++) {
-				MPI_Recv(&particles[i * step_width], step_width, MPI_PARTICLE, i, 0, MPI_COMM_WORLD,
-				         MPI_STATUS_IGNORE);
-			}
+		for(int i = 0; i < num_ranks; i++) {
+			MPI_Bcast(&particles[i * step_width], step_width, MPI_PARTICLE, i, MPI_COMM_WORLD);
+		}
+		if(my_rank == 1) {
 			for(int i = 0; i < NUM_PARTICLES; i++) {
 				fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y,
 				        particles[i].position.z);
 			}
 			fprintf(file, "\n\n");
 		}
-		MPI_Bcast(particles, NUM_PARTICLES, MPI_PARTICLE, 0, MPI_COMM_WORLD);
+		barnes_hut(particles, NUM_PARTICLES, num_ranks, my_rank);
 	}
 
 	if(my_rank == 0) {
