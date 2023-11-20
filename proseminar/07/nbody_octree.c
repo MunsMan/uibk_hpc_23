@@ -55,6 +55,30 @@ void free_tree(Node* node) {
 	free(node);
 }
 
+void print_tree(FILE* file, Node* node, int depth) {
+	for(int i = 0; i < depth; i++) {
+		fprintf(file, "\t");
+	}
+	int not_leaf = 0;
+	for(int i = 0; i < 8; i++) {
+		if(node->children[i]) {
+			not_leaf++;
+			break;
+		}
+	}
+	if(not_leaf) {
+		fprintf(file, "Node: %f %f %f\n", node->center_of_mass.x, node->center_of_mass.y,
+		        node->center_of_mass.z);
+	} else {
+		fprintf(file, "Leaf: %f %f %f\n", node->center_of_mass.x, node->center_of_mass.y,
+		        node->center_of_mass.z);
+	}
+	for(int i = 0; i < 8; i++) {
+		if(node->children[i]) {
+			print_tree(file, node->children[i], depth + 1);
+		}
+	}
+}
 double distance(Vector3D position1, Vector3D position2) {
 	double dx = position1.x - position2.x;
 	double dy = position1.y - position2.y;
@@ -97,37 +121,38 @@ void update_force(Particle* particle, Node* node) {
 	}
 }
 
-void build_tree(Particle particles[], int num_particles, Node* node) {
+void build_tree(Particle* particles[], int num_particles, Node* node) {
 	if(num_particles < 1) return;
 	if(num_particles == 1) {
-		node->mass = particles[0].mass;
-		node->center_of_mass.x = particles[0].position.x;
-		node->center_of_mass.y = particles[0].position.y;
-		node->center_of_mass.z = particles[0].position.z;
+		node->mass = particles[0]->mass;
+		node->center_of_mass.x = particles[0]->position.x;
+		node->center_of_mass.y = particles[0]->position.y;
+		node->center_of_mass.z = particles[0]->position.z;
 		return;
 	}
 
-	for(int i = 0; i < 8; ++i) {
+	for(int i = 0; i < 8; i++) {
 		Vector3D sub_center;
 		sub_center.x = node->center.x + 0.5 * node->size * ((i & 1 << (2)) ? 1 : -1);
 		sub_center.y = node->center.y + 0.5 * node->size * ((i & 1 << (1)) ? 1 : -1);
 		sub_center.z = node->center.z + 0.5 * node->size * ((i & 1 << (0)) ? 1 : -1);
 
-		node->children[i] = create_node(sub_center, 0.5 * node->size);
-
 		int num_sub_particles = 0;
-		Particle sub_particles[num_particles];
-		for(int j = 0; j < num_particles; ++j) {
-			if(fabs(particles[j].position.x - sub_center.x) < 0.5 * node->size &&
-			   fabs(particles[j].position.y - sub_center.y) < 0.5 * node->size &&
-			   fabs(particles[j].position.z - sub_center.z) < 0.5 * node->size) {
+		Particle* sub_particles[num_particles];
+		for(int j = 0; j < num_particles; j++) {
+			if(fabs(particles[j]->position.x - sub_center.x) < 0.5 * node->size &&
+			   fabs(particles[j]->position.y - sub_center.y) < 0.5 * node->size &&
+			   fabs(particles[j]->position.z - sub_center.z) < 0.5 * node->size) {
 				sub_particles[num_sub_particles++] = particles[j];
 			}
 		}
-		build_tree(sub_particles, num_sub_particles, node->children[i]);
+		if(num_sub_particles > 0) {
+			node->children[i] = create_node(sub_center, 0.5 * node->size);
+			build_tree(sub_particles, num_sub_particles, node->children[i]);
+		}
 	}
 
-	for(int i = 0; i < 8; ++i) {
+	for(int i = 0; i < 8; i++) {
 		if(node->children[i] != NULL) {
 			node->mass += node->children[i]->mass;
 			node->center_of_mass.x += node->children[i]->mass * node->children[i]->center_of_mass.x;
@@ -143,23 +168,23 @@ void build_tree(Particle particles[], int num_particles, Node* node) {
 	}
 }
 
-void barnes_hut(Particle particles[], int num_particles, int num_ranks, int my_rank) {
+void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_rank) {
 	Vector3D center = { 0.0, 0.0, 0.0 };
 	double max_distance = 0.0;
 
 	// Compute Center of Gravity
 	for(int i = 0; i < num_particles; ++i) {
-		center.x += particles[i].position.x;
-		center.y += particles[i].position.y;
-		center.z += particles[i].position.z;
+		center.x += particles[i]->position.x;
+		center.y += particles[i]->position.y;
+		center.z += particles[i]->position.z;
 	}
 	center.x /= num_particles;
 	center.y /= num_particles;
 	center.z /= num_particles;
 
 	// Compute Max distance of the center of all directions
-	for(int i = num_particles / num_ranks * my_rank; i < num_particles / num_ranks; i++) {
-		double d = distance(particles[i].position, center);
+	for(int i = 0; i < num_particles; i++) {
+		double d = distance(particles[i]->position, center);
 		if(d > max_distance) {
 			max_distance = d;
 		}
@@ -168,19 +193,26 @@ void barnes_hut(Particle particles[], int num_particles, int num_ranks, int my_r
 	Node* root = create_node(center, 2.0 * max_distance);
 
 	build_tree(particles, num_particles, root);
+
+	/* char fileName[11]; */
+	/* sprintf(fileName, "tree-%d.txt", my_rank); */
+	/* FILE* tree_file = fopen(fileName, "w"); */
+	/* print_tree(tree_file, root, 0); */
+	/* fclose(tree_file); */
+	/* return; */
+
 	int step_width = num_particles / num_ranks;
 	for(int i = step_width * my_rank; i < step_width * (my_rank + 1); i++) {
-		update_force(&particles[i], root);
-		particles[i].position.x += particles[i].velocity.x;
-		particles[i].position.y += particles[i].velocity.y;
-		particles[i].position.z += particles[i].velocity.z;
+		update_force(particles[i], root);
+		particles[i]->position.x += particles[i]->velocity.x;
+		particles[i]->position.y += particles[i]->velocity.y;
+		particles[i]->position.z += particles[i]->velocity.z;
 	}
 
 	free_tree(root);
 }
 
 int main(int argc, char* argv[]) {
-	Particle particles[NUM_PARTICLES];
 	FILE* file = fopen("data.dat", "w");
 	if(!file) {
 		printf("Error opening file\n");
@@ -193,12 +225,15 @@ int main(int argc, char* argv[]) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
 
+	Particle particles[NUM_PARTICLES];
+	Particle* particles_pointer[NUM_PARTICLES];
 	MPI_Datatype MPI_PARTICLE;
 	MPI_Type_contiguous(sizeof(Particle), MPI_BYTE, &MPI_PARTICLE);
 	MPI_Type_commit(&MPI_PARTICLE);
 
 	// Initialize particles with random values
 	for(int i = 0; i < NUM_PARTICLES; i++) {
+		particles_pointer[i] = &particles[i];
 		particles[i].mass = (double)rand() / RAND_MAX + 1;
 		particles[i].position.x = (double)rand() / RAND_MAX * 100;
 		particles[i].position.y = (double)rand() / RAND_MAX * 100;
@@ -225,7 +260,7 @@ int main(int argc, char* argv[]) {
 			}
 			fprintf(file, "\n\n");
 		}
-		barnes_hut(particles, NUM_PARTICLES, num_ranks, my_rank);
+		barnes_hut(particles_pointer, NUM_PARTICLES, num_ranks, my_rank);
 	}
 
 	if(my_rank == 0) {
