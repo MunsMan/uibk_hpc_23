@@ -6,8 +6,6 @@
 
 #define G 1       // 6.67430e-11 // gravitational constant
 #define THETA 0.5 // Efficency Parameter
-#define NUM_PARTICLES 5000
-#define NUM_STEPS 100
 
 typedef struct {
 	double x;
@@ -225,14 +223,22 @@ int main(int argc, char* argv[]) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_ranks);
 
-	Particle particles[NUM_PARTICLES];
-	Particle* particles_pointer[NUM_PARTICLES];
+	if(argc < 3) {
+		printf("Please run with: ./nbody <numParticles> <iterations>\n");
+		exit(1);
+	}
+
+	int numParticles = atoi(argv[1]);
+	int numSteps = atoi(argv[2]);
+
+	Particle* particles = malloc(numParticles * sizeof(Particle));
+	Particle** particles_pointer = malloc(numParticles * sizeof(Particle*));
 	MPI_Datatype MPI_PARTICLE;
 	MPI_Type_contiguous(sizeof(Particle), MPI_BYTE, &MPI_PARTICLE);
 	MPI_Type_commit(&MPI_PARTICLE);
 
 	// Initialize particles with random values
-	for(int i = 0; i < NUM_PARTICLES; i++) {
+	for(int i = 0; i < numParticles; i++) {
 		particles_pointer[i] = &particles[i];
 		particles[i].mass = (double)rand() / RAND_MAX + 1;
 		particles[i].position.x = (double)rand() / RAND_MAX * 100;
@@ -242,25 +248,25 @@ int main(int argc, char* argv[]) {
 		particles[i].velocity.y = 0.0;
 		particles[i].velocity.z = 0.0;
 	}
-	int step_width = NUM_PARTICLES / num_ranks;
+	int step_width = numParticles / num_ranks;
 	clock_t start;
 	start = clock();
 	if(my_rank == 0) {
 		printf("Number of Rangs: %d\n", num_ranks);
 	}
 	// Run simulation
-	for(int step = 0; step < NUM_STEPS; step++) {
+	for(int step = 0; step < numSteps; step++) {
 		for(int i = 0; i < num_ranks; i++) {
 			MPI_Bcast(&particles[i * step_width], step_width, MPI_PARTICLE, i, MPI_COMM_WORLD);
 		}
 		if(my_rank == 1) {
-			for(int i = 0; i < NUM_PARTICLES; i++) {
+			for(int i = 0; i < numParticles; i++) {
 				fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y,
 				        particles[i].position.z);
 			}
 			fprintf(file, "\n\n");
 		}
-		barnes_hut(particles_pointer, NUM_PARTICLES, num_ranks, my_rank);
+		barnes_hut(particles_pointer, numParticles, num_ranks, my_rank);
 	}
 
 	if(my_rank == 0) {
@@ -270,6 +276,8 @@ int main(int argc, char* argv[]) {
 	MPI_Type_free(&MPI_PARTICLE);
 	MPI_Finalize();
 
+	free(particles_pointer);
+	free(particles);
 	fclose(file);
 	return EXIT_SUCCESS;
 }
