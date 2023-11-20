@@ -282,7 +282,6 @@ int main(int argc, char* argv[]) {
 	for(int step = 0; step < numSteps; step++) {
 		barnes_hut(particles_pointer, numParticles, num_ranks, my_rank, &pre_aloc_nodes);
 		for(int i = 0; i < num_ranks - 1; i++) {
-
 			MPI_Ibcast(&particles[i * step_width], step_width, MPI_PARTICLE, i, MPI_COMM_WORLD,
 			           &requests[num_ranks - 1]);
 		}
