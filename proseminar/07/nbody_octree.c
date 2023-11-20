@@ -184,18 +184,15 @@ void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_
 		center.x += particles[i]->position.x;
 		center.y += particles[i]->position.y;
 		center.z += particles[i]->position.z;
-	}
-	center.x /= num_particles;
-	center.y /= num_particles;
-	center.z /= num_particles;
-
-	// Compute Max distance of the center of all directions
-	for(int i = 0; i < num_particles; i++) {
+		// Compute Max distance of the center of all directions
 		double d = distance(particles[i]->position, center);
 		if(d > max_distance) {
 			max_distance = d;
 		}
 	}
+	center.x /= num_particles;
+	center.y /= num_particles;
+	center.z /= num_particles;
 
 	Node* root = create_node(center, 2.0 * max_distance, pre_aloc_nodes);
 
