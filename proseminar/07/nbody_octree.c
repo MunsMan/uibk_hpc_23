@@ -244,8 +244,8 @@ int main(int argc, char* argv[]) {
 	}
 	int step_width = NUM_PARTICLES / num_ranks;
 	clock_t start;
+	start = clock();
 	if(my_rank == 0) {
-		start = clock();
 		printf("Number of Rangs: %d\n", num_ranks);
 	}
 	// Run simulation
