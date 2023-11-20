@@ -1,3 +1,5 @@
+Team collaboration of Hendrik Munske and Florian Neururer
+
 # Exercise 1
 
 ### Execution Time
