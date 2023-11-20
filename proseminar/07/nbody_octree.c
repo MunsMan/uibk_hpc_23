@@ -128,7 +128,6 @@ void update_force(Particle* particle, Node* node) {
 
 void build_tree(Particle* particles[], int num_particles, Node* node,
                 PreAlocNodes* pre_aloc_nodes) {
-	/* if(num_particles < 1) return; */
 	if(num_particles == 1) {
 		node->mass = particles[0]->mass;
 		node->center_of_mass.x = particles[0]->position.x;
@@ -199,13 +198,6 @@ void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_
 
 	build_tree(particles, num_particles, root, pre_aloc_nodes);
 
-	/* char fileName[11]; */
-	/* sprintf(fileName, "tree-%d.txt", my_rank); */
-	/* FILE* tree_file = fopen(fileName, "w"); */
-	/* print_tree(tree_file, root, 0); */
-	/* fclose(tree_file); */
-	/* return; */
-
 	int step_width = num_particles / num_ranks;
 	int rank_range =
 	    (step_width * (my_rank + 1) < num_particles ? step_width * (my_rank + 1) : num_particles);
@@ -215,8 +207,6 @@ void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_
 		particles[i]->position.y += particles[i]->velocity.y;
 		particles[i]->position.z += particles[i]->velocity.z;
 	}
-
-	/* free_tree(root); */
 }
 
 int main(int argc, char* argv[]) {
@@ -256,21 +246,21 @@ int main(int argc, char* argv[]) {
 	for(int i = 0; i < numParticles; i++) {
 		particles_pointer[i] = &particles[i];
 		particles[i].mass = (double)rand() / RAND_MAX + 1;
-			// particles[i].position.x = (double)rand() / RAND_MAX * 100;
-			// particles[i].position.y = (double)rand() / RAND_MAX * 100;
-			// particles[i].position.z = (double)rand() / RAND_MAX * 100;
+		// particles[i].position.x = (double)rand() / RAND_MAX * 100;
+		// particles[i].position.y = (double)rand() / RAND_MAX * 100;
+		// particles[i].position.z = (double)rand() / RAND_MAX * 100;
 
-			// Spacially imbalanced initial conditions
-			double imbalanceFactor = (double)rand() / RAND_MAX;
-			if(imbalanceFactor < IMBALANCE_FACTOR) {
-				particles[i].position.x = (double)rand() / RAND_MAX * 50;
-				particles[i].position.y = (double)rand() / RAND_MAX * 50;
-				particles[i].position.z = (double)rand() / RAND_MAX * 50;
-			} else {
-				particles[i].position.x = 50 + (double)rand() / RAND_MAX * 50;
-				particles[i].position.y = 50 + (double)rand() / RAND_MAX * 50;
-				particles[i].position.z = 50 + (double)rand() / RAND_MAX * 50;
-			}
+		// Spacially imbalanced initial conditions
+		double imbalanceFactor = (double)rand() / RAND_MAX;
+		if(imbalanceFactor < IMBALANCE_FACTOR) {
+			particles[i].position.x = (double)rand() / RAND_MAX * 50;
+			particles[i].position.y = (double)rand() / RAND_MAX * 50;
+			particles[i].position.z = (double)rand() / RAND_MAX * 50;
+		} else {
+			particles[i].position.x = 50 + (double)rand() / RAND_MAX * 50;
+			particles[i].position.y = 50 + (double)rand() / RAND_MAX * 50;
+			particles[i].position.z = 50 + (double)rand() / RAND_MAX * 50;
+		}
 		particles[i].velocity.x = 0.0;
 		particles[i].velocity.y = 0.0;
 		particles[i].velocity.z = 0.0;
@@ -302,13 +292,6 @@ int main(int argc, char* argv[]) {
 		           numParticles - (num_ranks - 1) * step_width, MPI_PARTICLE, num_ranks - 1,
 		           MPI_COMM_WORLD, &requests[num_ranks - 1]);
 		MPI_Barrier(MPI_COMM_WORLD);
-		/* if(my_rank == 1) { */
-		/* 	for(int i = 0; i < numParticles; i++) { */
-		/* 		fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y, */
-		/* 		        particles[i].position.z); */
-		/* 	} */
-		/* 	fprintf(file, "\n\n"); */
-		/* } */
 	}
 
 	double end = MPI_Wtime();
