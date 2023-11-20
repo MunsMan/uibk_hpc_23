@@ -200,7 +200,10 @@ void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_
 	/* return; */
 
 	int step_width = num_particles / num_ranks;
-	for(int i = step_width * my_rank; i < step_width * (my_rank + 1); i++) {
+	for(int i = step_width * my_rank;
+	    i <
+	    (step_width * (my_rank + 1) < num_particles ? step_width * (my_rank + 1) : num_particles);
+	    i++) {
 		update_force(particles[i], root);
 		particles[i]->position.x += particles[i]->velocity.x;
 		particles[i]->position.y += particles[i]->velocity.y;
@@ -252,13 +255,17 @@ int main(int argc, char* argv[]) {
 	clock_t start;
 	start = clock();
 	if(my_rank == 0) {
-		printf("Number of Rangs: %d\n", num_ranks);
+		printf("Number of Rangs: %d with %d Particles and %d Iterations\n", num_ranks, numParticles,
+		       numSteps);
 	}
 	// Run simulation
 	for(int step = 0; step < numSteps; step++) {
-		for(int i = 0; i < num_ranks; i++) {
+		for(int i = 0; i < num_ranks - 1; i++) {
 			MPI_Bcast(&particles[i * step_width], step_width, MPI_PARTICLE, i, MPI_COMM_WORLD);
 		}
+		MPI_Bcast(&particles[(num_ranks - 1) * step_width],
+		          numParticles - (num_ranks - 1) * step_width, MPI_PARTICLE, num_ranks - 1,
+		          MPI_COMM_WORLD);
 		if(my_rank == 1) {
 			for(int i = 0; i < numParticles; i++) {
 				fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y,
