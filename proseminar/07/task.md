@@ -33,3 +33,7 @@ In our case the computation time stayed the same.
 ## Octree Solution
 
 When an octree is used in an N-body simulation, the performance becomes sensitive to the spatial distribution of particles. In the octree the particles are subdivided to group nearby particles and thereby optimizes the force calculations by only considering detailed interactions between close neighbors and approximated interactions for distant particles. But since now a significant amount of the particles is close together the tree will be deeper and therefore need longer to calculate the forces.
+
+| Balanced | Factor 0.5 | Factor 0.1 |
+| -------- | ---------- | ---------- |
+| 0.650    | 0.984      | 1.388      |
