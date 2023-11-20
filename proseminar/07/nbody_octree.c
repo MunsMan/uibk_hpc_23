@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define G 1       // 6.67430e-11 // gravitational constant
-#define THETA 0.5 // Efficency Parameter
+#define G 1        // 6.67430e-11 // gravitational constant
+#define THETA 0.55 // Efficency Parameter
 
 typedef struct {
 	double x;
@@ -27,8 +27,14 @@ typedef struct Node {
 	struct Node* children[8];
 } Node;
 
-Node* create_node(Vector3D center, double size) {
-	Node* node = (Node*)malloc(sizeof(Node));
+typedef struct PreAlocNodes {
+	int num_nodes;
+	int used_nodes;
+	Node* nodes;
+} PreAlocNodes;
+
+Node* create_node(Vector3D center, double size, PreAlocNodes* pre_aloc_nodes) {
+	Node* node = &pre_aloc_nodes->nodes[pre_aloc_nodes->used_nodes++];
 	node->center.x = center.x;
 	node->center.y = center.y;
 	node->center.z = center.z;
@@ -119,8 +125,9 @@ void update_force(Particle* particle, Node* node) {
 	}
 }
 
-void build_tree(Particle* particles[], int num_particles, Node* node) {
-	if(num_particles < 1) return;
+void build_tree(Particle* particles[], int num_particles, Node* node,
+                PreAlocNodes* pre_aloc_nodes) {
+	/* if(num_particles < 1) return; */
 	if(num_particles == 1) {
 		node->mass = particles[0]->mass;
 		node->center_of_mass.x = particles[0]->position.x;
@@ -145,8 +152,8 @@ void build_tree(Particle* particles[], int num_particles, Node* node) {
 			}
 		}
 		if(num_sub_particles > 0) {
-			node->children[i] = create_node(sub_center, 0.5 * node->size);
-			build_tree(sub_particles, num_sub_particles, node->children[i]);
+			node->children[i] = create_node(sub_center, 0.5 * node->size, pre_aloc_nodes);
+			build_tree(sub_particles, num_sub_particles, node->children[i], pre_aloc_nodes);
 		}
 	}
 
@@ -166,7 +173,9 @@ void build_tree(Particle* particles[], int num_particles, Node* node) {
 	}
 }
 
-void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_rank) {
+void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_rank,
+                PreAlocNodes* pre_aloc_nodes) {
+	pre_aloc_nodes->used_nodes = 0;
 	Vector3D center = { 0.0, 0.0, 0.0 };
 	double max_distance = 0.0;
 
@@ -188,9 +197,9 @@ void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_
 		}
 	}
 
-	Node* root = create_node(center, 2.0 * max_distance);
+	Node* root = create_node(center, 2.0 * max_distance, pre_aloc_nodes);
 
-	build_tree(particles, num_particles, root);
+	build_tree(particles, num_particles, root, pre_aloc_nodes);
 
 	/* char fileName[11]; */
 	/* sprintf(fileName, "tree-%d.txt", my_rank); */
@@ -200,17 +209,16 @@ void barnes_hut(Particle* particles[], int num_particles, int num_ranks, int my_
 	/* return; */
 
 	int step_width = num_particles / num_ranks;
-	for(int i = step_width * my_rank;
-	    i <
+	int rank_range =
 	    (step_width * (my_rank + 1) < num_particles ? step_width * (my_rank + 1) : num_particles);
-	    i++) {
+	for(int i = step_width * my_rank; i < rank_range; i++) {
 		update_force(particles[i], root);
 		particles[i]->position.x += particles[i]->velocity.x;
 		particles[i]->position.y += particles[i]->velocity.y;
 		particles[i]->position.z += particles[i]->velocity.z;
 	}
 
-	free_tree(root);
+	/* free_tree(root); */
 }
 
 int main(int argc, char* argv[]) {
@@ -236,6 +244,12 @@ int main(int argc, char* argv[]) {
 
 	Particle* particles = malloc(numParticles * sizeof(Particle));
 	Particle** particles_pointer = malloc(numParticles * sizeof(Particle*));
+	Node* nodes = malloc(numParticles * 2 * sizeof(Node));
+	PreAlocNodes pre_aloc_nodes = { .nodes = nodes,
+		                            .num_nodes = numParticles * 2,
+		                            .used_nodes = 0 };
+
+	MPI_Request requests[num_ranks];
 	MPI_Datatype MPI_PARTICLE;
 	MPI_Type_contiguous(sizeof(Particle), MPI_BYTE, &MPI_PARTICLE);
 	MPI_Type_commit(&MPI_PARTICLE);
@@ -252,39 +266,52 @@ int main(int argc, char* argv[]) {
 		particles[i].velocity.z = 0.0;
 	}
 	int step_width = numParticles / num_ranks;
-	clock_t start;
-	start = clock();
+	for(int i = 0; i < num_ranks - 1; i++) {
+
+		MPI_Ibcast(&particles[i * step_width], step_width, MPI_PARTICLE, i, MPI_COMM_WORLD,
+		           &requests[num_ranks - 1]);
+	}
+	MPI_Ibcast(&particles[(num_ranks - 1) * step_width],
+	           numParticles - (num_ranks - 1) * step_width, MPI_PARTICLE, num_ranks - 1,
+	           MPI_COMM_WORLD, &requests[num_ranks - 1]);
+	MPI_Barrier(MPI_COMM_WORLD);
+	double start;
+	start = MPI_Wtime();
 	if(my_rank == 0) {
 		printf("Number of Rangs: %d with %d Particles and %d Iterations\n", num_ranks, numParticles,
 		       numSteps);
 	}
 	// Run simulation
 	for(int step = 0; step < numSteps; step++) {
+		barnes_hut(particles_pointer, numParticles, num_ranks, my_rank, &pre_aloc_nodes);
 		for(int i = 0; i < num_ranks - 1; i++) {
-			MPI_Bcast(&particles[i * step_width], step_width, MPI_PARTICLE, i, MPI_COMM_WORLD);
+
+			MPI_Ibcast(&particles[i * step_width], step_width, MPI_PARTICLE, i, MPI_COMM_WORLD,
+			           &requests[num_ranks - 1]);
 		}
-		MPI_Bcast(&particles[(num_ranks - 1) * step_width],
-		          numParticles - (num_ranks - 1) * step_width, MPI_PARTICLE, num_ranks - 1,
-		          MPI_COMM_WORLD);
-		if(my_rank == 1) {
-			for(int i = 0; i < numParticles; i++) {
-				fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y,
-				        particles[i].position.z);
-			}
-			fprintf(file, "\n\n");
-		}
-		barnes_hut(particles_pointer, numParticles, num_ranks, my_rank);
+		MPI_Ibcast(&particles[(num_ranks - 1) * step_width],
+		           numParticles - (num_ranks - 1) * step_width, MPI_PARTICLE, num_ranks - 1,
+		           MPI_COMM_WORLD, &requests[num_ranks - 1]);
+		MPI_Barrier(MPI_COMM_WORLD);
+		/* if(my_rank == 1) { */
+		/* 	for(int i = 0; i < numParticles; i++) { */
+		/* 		fprintf(file, "%f %f %f\n", particles[i].position.x, particles[i].position.y, */
+		/* 		        particles[i].position.z); */
+		/* 	} */
+		/* 	fprintf(file, "\n\n"); */
+		/* } */
 	}
 
+	double end = MPI_Wtime();
 	if(my_rank == 0) {
-		clock_t end = clock();
-		printf("Simulation time: %f seconds\n", ((double)(end - start)) / CLOCKS_PER_SEC);
+		printf("Simulation time: %f seconds\n", end - start);
 	}
 	MPI_Type_free(&MPI_PARTICLE);
 	MPI_Finalize();
 
 	free(particles_pointer);
 	free(particles);
+	free(nodes);
 	fclose(file);
 	return EXIT_SUCCESS;
 }
