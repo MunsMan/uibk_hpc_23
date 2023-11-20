@@ -11,4 +11,4 @@
 # Enforce exclusive node allocation, do not share with other jobs
 #SBATCH --exclusive
 
-./nbody-octree 5000 100
+./nbody_octree 5000 100
