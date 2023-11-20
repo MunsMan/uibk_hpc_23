@@ -6,6 +6,7 @@
 
 #define G 1        // 6.67430e-11 // gravitational constant
 #define THETA 0.55 // Efficency Parameter
+#define IMBALANCE_FACTOR 0.5
 
 typedef struct {
 	double x;
@@ -255,9 +256,21 @@ int main(int argc, char* argv[]) {
 	for(int i = 0; i < numParticles; i++) {
 		particles_pointer[i] = &particles[i];
 		particles[i].mass = (double)rand() / RAND_MAX + 1;
-		particles[i].position.x = (double)rand() / RAND_MAX * 100;
-		particles[i].position.y = (double)rand() / RAND_MAX * 100;
-		particles[i].position.z = (double)rand() / RAND_MAX * 100;
+			// particles[i].position.x = (double)rand() / RAND_MAX * 100;
+			// particles[i].position.y = (double)rand() / RAND_MAX * 100;
+			// particles[i].position.z = (double)rand() / RAND_MAX * 100;
+
+			// Spacially imbalanced initial conditions
+			double imbalanceFactor = (double)rand() / RAND_MAX;
+			if(imbalanceFactor < IMBALANCE_FACTOR) {
+				particles[i].position.x = (double)rand() / RAND_MAX * 50;
+				particles[i].position.y = (double)rand() / RAND_MAX * 50;
+				particles[i].position.z = (double)rand() / RAND_MAX * 50;
+			} else {
+				particles[i].position.x = 50 + (double)rand() / RAND_MAX * 50;
+				particles[i].position.y = 50 + (double)rand() / RAND_MAX * 50;
+				particles[i].position.z = 50 + (double)rand() / RAND_MAX * 50;
+			}
 		particles[i].velocity.x = 0.0;
 		particles[i].velocity.y = 0.0;
 		particles[i].velocity.z = 0.0;
