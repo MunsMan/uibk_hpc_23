@@ -4,7 +4,7 @@
 
 ![Execution time](./execution_time.png)
 
-In this first plot, we can see the execution time for both 10,000 and 20,000 particles decreases significantly at first. This is expected because adding more computational resources (cores) allows the work to be divided among more processors, which should reduce the time taken to simulate the same number of particles. However, beyond a certain point, the execution time plateaus, and there is no significant decrease. This is likely due to the fact that now the amount of particles in each ranks drops significantly and thus communication becomes the main bottleneck.
+In this first plot, we can see the execution time for both 10,000 and 20,000 particles decreases significantly at first. This is expected because adding more computational resources (cores) allows the work to be divided among more processors, which should reduce the time taken to simulate the same number of particles. However, beyond a certain point, the execution time plateaus, and there is no significant decrease. This is likely due to the fact that now the amount of particles in each rank drops significantly and thus communication becomes the main bottleneck.
 
 ### Speedup
 
@@ -37,3 +37,5 @@ When an octree is used in an N-body simulation, the performance becomes sensitiv
 | Balanced | Factor 0.5 | Factor 0.1 |
 | -------- | ---------- | ---------- |
 | 0.650    | 0.984      | 1.388      |
+
+To reduce the effect of the reduced spatial distribution, we distributed the particles across the ranks randomly, by just splitting the memory regions and to using any spatial orientation.
