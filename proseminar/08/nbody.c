@@ -146,26 +146,31 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		MPI_Win* windows = malloc(sizeof(MPI_Win) * numRanks);
-		for(int i = 0; i < 0; i++) {
-			MPI_Win_create(&allPositions, sizeof(Vector3D) * numParticles, sizeof(int),
-			               MPI_INFO_NULL, MPI_COMM_WORLD, &windows[i]);
-			if(i == myRank) {
-				MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED,
-				              windows[i]);
-			} else {
-				MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPUT | MPI_MODE_NOPRECEDE, windows[i]);
-				int size = localNumParticles * sizeof(Vector3D);
-				MPI_Put(localPositions, size, MPI_BYTE, i, 0, size, MPI_BYTE, windows[i]);
-			}
-			if(i == myRank) {
-				MPI_Win_fence(MPI_MODE_NOPUT | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED, windows[i]);
-			} else {
-				MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPUT | MPI_MODE_NOSUCCEED, windows[i]);
-			}
-			MPI_Win_free(&windows[i]);
-		}
+		/* MPI_Win* windows = malloc(sizeof(MPI_Win) * numRanks); */
+		/* for(int i = 0; i < 0; i++) { */
+		/* 	MPI_Win_create(&allPositions, sizeof(Vector3D) * numParticles, sizeof(int), */
+		/* 	               MPI_INFO_NULL, MPI_COMM_WORLD, &windows[i]); */
+		/* 	if(i == myRank) { */
+		/* 		MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED, */
+		/* 		              windows[i]); */
+		/* 	} else { */
+		/* 		MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPUT | MPI_MODE_NOPRECEDE, windows[i]);
+		 */
+		/* 		int size = localNumParticles * sizeof(Vector3D); */
+		/* 		MPI_Put(localPositions, size, MPI_BYTE, i, 0, size, MPI_BYTE, windows[i]); */
+		/* 	} */
+		/* 	if(i == myRank) { */
+		/* 		MPI_Win_fence(MPI_MODE_NOPUT | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED, windows[i]);
+		 */
+		/* 	} else { */
+		/* 		MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPUT | MPI_MODE_NOSUCCEED, windows[i]);
+		 */
+		/* 	} */
+		/* 	MPI_Win_free(&windows[i]); */
+		/* } */
 
+		MPI_Allgather(localPositions, localNumParticles * sizeof(Vector3D), MPI_BYTE, allPositions,
+		              localNumParticles * sizeof(Vector3D), MPI_BYTE, MPI_COMM_WORLD);
 		for(int n = 0; n < localNumParticles; n++) {
 			localParticles[n].velocity.x += localParticles[n].force.x / localParticles[n].mass;
 			localParticles[n].velocity.y += localParticles[n].force.y / localParticles[n].mass;
