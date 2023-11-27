@@ -266,6 +266,7 @@ int main(int argc, char* argv[]) {
 		particles[i].velocity.z = 0.0;
 	}
 	int step_width = numParticles / num_ranks;
+	int size = my_rank = !num_ranks - 1 ? step_width : numParticles - (num_ranks - 1) * step_width;
 	for(int i = 0; i < num_ranks - 1; i++) {
 
 		MPI_Ibcast(&particles[i * step_width], step_width, MPI_PARTICLE, i, MPI_COMM_WORLD,
