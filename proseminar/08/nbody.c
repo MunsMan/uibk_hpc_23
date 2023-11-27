@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	srand(time(NULL) * myRank);
+	srand(time(NULL));
 	int numParticles = atoi(argv[1]);
 	int iterations = atoi(argv[2]);
 
@@ -57,49 +57,23 @@ int main(int argc, char* argv[]) {
 
 	Vector3D* localPositions = malloc(localNumParticles * sizeof(Vector3D));
 	Vector3D* allPositions = malloc(numParticles * sizeof(Vector3D));
-	int step = numParticles / numRanks;
-	for(int i = myRank * step; i < (i < numRanks - 1 ? (myRank + 1) * step : numParticles); i++) {
-		allParticles[i].position.x = (double)rand() / RAND_MAX * 100;
-		allParticles[i].position.y = (double)rand() / RAND_MAX * 100;
-		allParticles[i].position.z = (double)rand() / RAND_MAX * 100;
 
-		// Spacially imbalanced initial conditions
-		/* double imbalanceFactor = (double)rand() / RAND_MAX; */
-		/* if(imbalanceFactor < IMBALANCE_FACTOR) { */
-		/* 	allParticles[i].position.x = (double)rand() / RAND_MAX * 50; */
-		/* 	allParticles[i].position.y = (double)rand() / RAND_MAX * 50; */
-		/* 	allParticles[i].position.z = (double)rand() / RAND_MAX * 50; */
-		/* } else { */
-		/* 	allParticles[i].position.x = 50 + (double)rand() / RAND_MAX * 50; */
-		/* 	allParticles[i].position.y = 50 + (double)rand() / RAND_MAX * 50; */
-		/* 	allParticles[i].position.z = 50 + (double)rand() / RAND_MAX * 50; */
-		/* } */
+	if(myRank == 0) {
+		for(int i = 0; i < numParticles; i++) {
 
-		allParticles[i].velocity.x = 0;
-		allParticles[i].velocity.y = 0;
-		allParticles[i].velocity.z = 0;
+			allParticles[i].position.x = (double)rand() / RAND_MAX * 100;
+			allParticles[i].position.y = (double)rand() / RAND_MAX * 100;
+			allParticles[i].position.z = (double)rand() / RAND_MAX * 100;
 
-		allParticles[i].mass = (double)rand() / RAND_MAX + 1;
-	}
-	MPI_Win* windows = malloc(sizeof(MPI_Win) * numRanks);
-	for(int i = 0; i < 0; i++) {
-		MPI_Win_create(&allParticles, sizeof(Particle) * numParticles, sizeof(int), MPI_INFO_NULL,
-		               MPI_COMM_WORLD, &windows[i]);
-		if(i == myRank) {
-			MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED, windows[i]);
-		} else {
-			MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPUT | MPI_MODE_NOPRECEDE, windows[i]);
-			int size = (myRank != numRanks - 1 ? step : numParticles - (step * numRanks - 1)) *
-			           sizeof(Particle);
-			MPI_Put(&allParticles[myRank * step], size, MPI_BYTE, i, 0, size, MPI_BYTE, windows[i]);
+			allParticles[i].velocity.x = 0;
+			allParticles[i].velocity.y = 0;
+			allParticles[i].velocity.z = 0;
+
+			allParticles[i].mass = (double)rand() / RAND_MAX + 1;
 		}
-		if(i == myRank) {
-			MPI_Win_fence(MPI_MODE_NOPUT | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED, windows[i]);
-		} else {
-			MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPUT | MPI_MODE_NOSUCCEED, windows[i]);
-		}
-		MPI_Win_free(&windows[i]);
 	}
+
+	MPI_Bcast(allParticles, numParticles * sizeof(Particle), MPI_BYTE, 0, MPI_COMM_WORLD);
 
 	for(int i = 0; i < numParticles; i++) {
 		allPositions[i] = allParticles[i].position;
@@ -112,6 +86,11 @@ int main(int argc, char* argv[]) {
 		localParticles[j] = allParticles[i];
 		localPositions[j] = allPositions[i];
 	}
+
+	MPI_Win win;
+	MPI_Aint size = numParticles * sizeof(Vector3D);
+
+	MPI_Win_create(localPositions, size, sizeof(Vector3D), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
 
 	double starttime, endtime;
 	starttime = MPI_Wtime();
@@ -146,31 +125,8 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		/* MPI_Win* windows = malloc(sizeof(MPI_Win) * numRanks); */
-		/* for(int i = 0; i < 0; i++) { */
-		/* 	MPI_Win_create(&allPositions, sizeof(Vector3D) * numParticles, sizeof(int), */
-		/* 	               MPI_INFO_NULL, MPI_COMM_WORLD, &windows[i]); */
-		/* 	if(i == myRank) { */
-		/* 		MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED, */
-		/* 		              windows[i]); */
-		/* 	} else { */
-		/* 		MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPUT | MPI_MODE_NOPRECEDE, windows[i]);
-		 */
-		/* 		int size = localNumParticles * sizeof(Vector3D); */
-		/* 		MPI_Put(localPositions, size, MPI_BYTE, i, 0, size, MPI_BYTE, windows[i]); */
-		/* 	} */
-		/* 	if(i == myRank) { */
-		/* 		MPI_Win_fence(MPI_MODE_NOPUT | MPI_MODE_NOPRECEDE | MPI_MODE_NOSUCCEED, windows[i]);
-		 */
-		/* 	} else { */
-		/* 		MPI_Win_fence(MPI_MODE_NOSTORE | MPI_MODE_NOPUT | MPI_MODE_NOSUCCEED, windows[i]);
-		 */
-		/* 	} */
-		/* 	MPI_Win_free(&windows[i]); */
-		/* } */
+		MPI_Win_fence(0, win);
 
-		MPI_Allgather(localPositions, localNumParticles * sizeof(Vector3D), MPI_BYTE, allPositions,
-		              localNumParticles * sizeof(Vector3D), MPI_BYTE, MPI_COMM_WORLD);
 		for(int n = 0; n < localNumParticles; n++) {
 			localParticles[n].velocity.x += localParticles[n].force.x / localParticles[n].mass;
 			localParticles[n].velocity.y += localParticles[n].force.y / localParticles[n].mass;
@@ -180,6 +136,15 @@ int main(int argc, char* argv[]) {
 			localPositions[n].y += localParticles[n].velocity.y;
 			localPositions[n].z += localParticles[n].velocity.z;
 		}
+
+		MPI_Put(localPositions, localNumParticles * sizeof(Vector3D), MPI_BYTE, myRank, 0,
+		        localNumParticles * sizeof(Vector3D), MPI_BYTE, win);
+
+		MPI_Win_fence(0, win);
+
+		MPI_Win_fence(0, win);
+		MPI_Get(allPositions, size, MPI_BYTE, myRank, 0, size, MPI_BYTE, win);
+		MPI_Win_fence(0, win);
 
 		if(myRank == 0) {
 			for(int n = 0; n < numParticles; n++) {
