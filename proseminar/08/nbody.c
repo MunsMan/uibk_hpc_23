@@ -163,6 +163,7 @@ int main(int argc, char* argv[]) {
 	free(localParticles);
 	free(localPositions);
 	free(allPositions);
+	MPI_Win_free(&win);
 	MPI_Finalize();
 
 	return EXIT_SUCCESS;
