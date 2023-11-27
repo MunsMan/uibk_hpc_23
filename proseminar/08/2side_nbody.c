@@ -61,21 +61,9 @@ int main(int argc, char* argv[]) {
 	if(myRank == 0) {
 		for(int i = 0; i < numParticles; i++) {
 
-			// allParticles[i].position.x = (double)rand() / RAND_MAX * 100;
-			// allParticles[i].position.y = (double)rand() / RAND_MAX * 100;
-			// allParticles[i].position.z = (double)rand() / RAND_MAX * 100;
-
-			// Spacially imbalanced initial conditions
-			double imbalanceFactor = (double)rand() / RAND_MAX;
-			if(imbalanceFactor < IMBALANCE_FACTOR) {
-				allParticles[i].position.x = (double)rand() / RAND_MAX * 50;
-				allParticles[i].position.y = (double)rand() / RAND_MAX * 50;
-				allParticles[i].position.z = (double)rand() / RAND_MAX * 50;
-			} else {
-				allParticles[i].position.x = 50 + (double)rand() / RAND_MAX * 50;
-				allParticles[i].position.y = 50 + (double)rand() / RAND_MAX * 50;
-				allParticles[i].position.z = 50 + (double)rand() / RAND_MAX * 50;
-			}
+			allParticles[i].position.x = (double)rand() / RAND_MAX * 100;
+			allParticles[i].position.y = (double)rand() / RAND_MAX * 100;
+			allParticles[i].position.z = (double)rand() / RAND_MAX * 100;
 
 			allParticles[i].velocity.x = 0;
 			allParticles[i].velocity.y = 0;
