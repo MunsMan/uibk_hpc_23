@@ -19,9 +19,6 @@ int main(int argc, char* argv[]) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 	MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
-	// Ensure that work is evenly distributed
-	// allows integer divisions
-	// could be easily fixed
 	if(N % numProcs != 0) {
 		MPI_Finalize();
 		return EXIT_FAILURE;
@@ -41,7 +38,7 @@ int main(int argc, char* argv[]) {
 		uint64_t upper_bound = UINT64_MAX >> 2;
 		uint64_t maks = UINT32_MAX >> 1;
 
-		for(uint64_t i = 0; i < N / numProcs; i++) {
+		for(uint64_t i = 0; i < N; i++) {
 			uint64_t r = next();
 			uint64_t x = r >> 33;
 			uint64_t y = r & maks;
