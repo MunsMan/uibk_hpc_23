@@ -58,16 +58,14 @@ To set the CPU to run at a specified frequency (which unfortunately did not work
 
 `cpupower frequency-set -f clock_freq`
 
-
-
 ### Benchmarking
 
 To measure the energy consumption the `perf` command from Task 1 was used.
 
 | max Frequency | Performance (MB/s) | Power Consumption (Joules) |
-| ------------- | ----------- | ----------------- |
-| native        | 41630.8     | 6.06              |
-| 3000 Mhz      | 41580.9     | 3.05              |
-| 2000 Mhz      | 40955.0     | 1.79              |
-| 1000 Mhz      | 32060.4     | 1.44              |
-| 400 Mhz       | 16660.9     | 0.32              |
+| ------------- | ------------------ | -------------------------- |
+| native        | 41630.8            | 6.06                       |
+| 3000 Mhz      | 41580.9            | 3.05                       |
+| 2000 Mhz      | 40955.0            | 1.79                       |
+| 1000 Mhz      | 32060.4            | 1.44                       |
+| 400 Mhz       | 16660.9            | 0.32                       |
