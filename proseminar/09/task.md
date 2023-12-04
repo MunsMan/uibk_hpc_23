@@ -8,7 +8,7 @@ The Intel Core i7-11370H supports basic Intel RAPL features. This includes monit
 
 1. **Finding Power Events:** Use the `perf list` command to find available RAPL events. This command lists all the performance monitoring events available, including those for power which can be filtered with `grep`.
 
-2. **Measuring with `perf`:** Once identified the relevant RAPL events, unsing the command like `perf stat -a -e "power/energy-cores/"` to measure the energy consumption of the CPU cores while running a specific program results in the following output:
+2. **Measuring with `perf`:** Once identified the relevant RAPL events, using the command like `perf stat -a -e "power/energy-cores/"` to measure the energy consumption of the CPU cores while running a specific program results in the following output:
 
 ```
 Performance counter stats for 'system wide':
@@ -24,7 +24,7 @@ Performance counter stats for 'system wide':
 
 ### Setting the CPU Frequency
 
-Using the linke Arch wiki article the Frequency of the CPU could be set using the `cpupower` tool.
+Using the linked Arch wiki article the Frequency of the CPU could be set using the `cpupower` tool.
 
 To gather information the following command can be run `cpupower frequency-info` which results in:
 
@@ -65,7 +65,7 @@ To measure the energy consumption the `perf` command from Task 1 was used.
 | max Frequency | Performance (MB/s) | Power Consumption (Joules) |
 | ------------- | ------------------ | -------------------------- |
 | native        | 41630.8            | 6.06                       |
-| 3000 Mhz      | 41580.9            | 3.05                       |
-| 2000 Mhz      | 40955.0            | 1.79                       |
-| 1000 Mhz      | 32060.4            | 1.44                       |
-| 400 Mhz       | 16660.9            | 0.32                       |
+| 3000 MHz      | 41580.9            | 3.05                       |
+| 2000 MHz      | 40955.0            | 1.79                       |
+| 1000 MHz      | 32060.4            | 1.44                       |
+| 400 MHz       | 16660.9            | 0.32                       |
