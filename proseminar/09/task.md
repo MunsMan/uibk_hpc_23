@@ -6,7 +6,7 @@ The Intel Core i7-11370H supports basic Intel RAPL features. This includes monit
 
 ### Gathering information
 
-In order to gather more information about the underlying power instrumentation a program that reads the MSRs was used from ![rapl-read.c](https://web.eece.maine.edu/~vweaver/projects/rapl/rapl-read.c). (There was a slight change since Intel Tiger Lake is not supported by the script, Kaby Lake was used)
+In order to gather more information about the underlying power instrumentation a program that reads the MSRs was used from [rapl-read.c](https://web.eece.maine.edu/~vweaver/projects/rapl/rapl-read.c). (There was a slight change since Intel Tiger Lake is not supported by the script, Kaby Lake was used)
 
 This results in the following output where we can see the resolution and accuracy of the power instrumentation:
 
