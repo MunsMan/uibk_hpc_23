@@ -6,3 +6,7 @@ notes.md
 **build/
 .direnv/
 .clangd
+
+**.dSYM/
+**.DS_Store
+**compile_flags.txt
