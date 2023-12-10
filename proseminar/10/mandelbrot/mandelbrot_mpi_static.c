@@ -54,16 +54,12 @@ void calcMandelbrot(uint8_t* image, int sizeX, int sizeY, int start_row, int end
 			HSVToRGB(value, 1.0, 1.0, &red, &green, &blue);
 
 			int channel = 0;
-			image[IND(pixelY - start_row, pixelX, end_row - start_row, sizeX, channel++)] =
-			    (uint8_t)(red * UINT8_MAX);
-			image[IND(pixelY - start_row, pixelX, end_row - start_row, sizeX, channel++)] =
-			    (uint8_t)(green * UINT8_MAX);
-			image[IND(pixelY - start_row, pixelX, end_row - start_row, sizeX, channel++)] =
-			    (uint8_t)(blue * UINT8_MAX);
+			image[IND(pixelY, pixelX, sizeY, sizeX, channel++)] = (uint8_t)(red * UINT8_MAX);
+			image[IND(pixelY, pixelX, sizeY, sizeX, channel++)] = (uint8_t)(green * UINT8_MAX);
+			image[IND(pixelY, pixelX, sizeY, sizeX, channel++)] = (uint8_t)(blue * UINT8_MAX);
 		}
 	}
 }
-
 int main(int argc, char** argv) {
 	MPI_Init(&argc, &argv);
 
@@ -77,19 +73,25 @@ int main(int argc, char** argv) {
 	if(argc == 3) {
 		sizeX = atoi(argv[1]);
 		sizeY = atoi(argv[2]);
-	} else {
+	} else if(rank == 0) {
 		printf("No arguments given, using default size\n");
 	}
 
-	int chunk_size = sizeY / size;
-	int start_row = rank * chunk_size;
-	int end_row = (rank + 1) * chunk_size;
+	// Calculate the number of rows each process will handle
+	int rows_per_process = (sizeY + size - 1) / size; // Ensure all rows are covered
 
-	uint8_t* local_image = malloc(NUM_CHANNELS * sizeX * chunk_size * sizeof(uint8_t));
+	// Allocate memory for the local image based on the maximum possible size
+	uint8_t* image = malloc(NUM_CHANNELS * sizeX * sizeY * sizeof(uint8_t));
 
 	double start, end;
 	start = MPI_Wtime();
-	calcMandelbrot(local_image, sizeX, sizeY, start_row, end_row);
+
+	for(int i = 0; i < rows_per_process; i++) {
+		int row = rank + i * size;
+		if(row < sizeY) {
+			calcMandelbrot(image, sizeX, sizeY, row, row + 1);
+		}
+	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	uint8_t* full_image = NULL;
@@ -100,16 +102,33 @@ int main(int argc, char** argv) {
 		full_image = malloc(NUM_CHANNELS * sizeX * sizeY * sizeof(uint8_t));
 	}
 
-	MPI_Gather(local_image, NUM_CHANNELS * sizeX * chunk_size, MPI_UINT8_T, full_image,
-	           NUM_CHANNELS * sizeX * chunk_size, MPI_UINT8_T, 0, MPI_COMM_WORLD);
+	for(int row = 0; row < sizeY; row++) {
+		int sourceRank = row % size;
+		if(rank == 0) {
+			if(sourceRank == 0) {
+				// Copy row from local buffer to full image
+				memcpy(full_image + row * sizeX * NUM_CHANNELS, image + row * sizeX * NUM_CHANNELS,
+				       sizeX * NUM_CHANNELS);
+			} else {
+				// Receive row from other process
+				MPI_Recv(full_image + row * sizeX * NUM_CHANNELS, NUM_CHANNELS * sizeX, MPI_UINT8_T,
+				         sourceRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		} else if(sourceRank == rank) {
+			// Send row to root process
+			MPI_Send(image + row * sizeX * NUM_CHANNELS, NUM_CHANNELS * sizeX, MPI_UINT8_T, 0, 0,
+			         MPI_COMM_WORLD);
+		}
+	}
 
 	if(rank == 0) {
 		const int stride_bytes = 0;
-		stbi_write_png("mandelbrot_mpi.png", sizeX, sizeY, NUM_CHANNELS, full_image, stride_bytes);
+		stbi_write_png("mandelbrot_mpi_static.png", sizeX, sizeY, NUM_CHANNELS, full_image,
+		               stride_bytes);
 		free(full_image);
 	}
 
-	free(local_image);
+	free(image);
 	MPI_Finalize();
 }
 
