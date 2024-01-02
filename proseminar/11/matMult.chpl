@@ -15,10 +15,10 @@ proc initializeMatrix(mat: [?D] real) {
 }
 
 proc matMult(A: [?AD] real, B: [?BD] real, C: [?CD] real) {
-  forall i in AD.dim(1) {
-    forall j in BD.dim(2) {
+  forall i in AD.dim(0) {
+    forall j in BD.dim(1) {
       var sum: real = 0;
-      for k in AD.dim(2) {
+      for k in AD.dim(1) {
         sum += A[i, k] * B[k, j];
       }
       C[i, j] = sum;
