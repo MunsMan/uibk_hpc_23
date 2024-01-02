@@ -34,8 +34,6 @@ proc main() {
   initializeMatrix(A);
   initializeMatrix(B);
 
-  here.maxTaskPar = numThreads;
-
   const startTime = timeSinceEpoch().totalSeconds();
   matMult(A, B, C);
   const endTime = timeSinceEpoch().totalSeconds();
