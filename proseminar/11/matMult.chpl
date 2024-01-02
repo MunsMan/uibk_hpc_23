@@ -5,7 +5,7 @@ use Time;
 config const size = 2552;
 config const numThreads: int = 4;
 
-proc initializeMatrix(mat: [?D] real) {
+proc initializeMatrix(ref mat: [?D] real) {
   var randStream = new randomStream(real); // Create a random number generator
   for i in D.dim(0) {
     for j in D.dim(1) {
@@ -14,7 +14,7 @@ proc initializeMatrix(mat: [?D] real) {
   }
 }
 
-proc matMult(A: [?AD] real, B: [?BD] real, C: [?CD] real) {
+proc matMult(A: [?AD] real, B: [?BD] real,ref C: [?CD] real) {
   forall i in AD.dim(0) {
     forall j in BD.dim(1) {
       var sum: real = 0;
