@@ -7,8 +7,8 @@ config const numThreads: int = 4;
 
 proc initializeMatrix(mat: [?D] real) {
   var randStream = new randomStream(real); // Create a random number generator
-  for i in D.dim(1) {
-    for j in D.dim(2) {
+  for i in D.dim(0) {
+    for j in D.dim(1) {
       mat[i, j] = randStream.getNext(); // Assign a random real number to each element
     }
   }
