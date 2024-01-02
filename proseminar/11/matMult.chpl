@@ -36,9 +36,9 @@ proc main() {
 
   here.maxTaskPar = numThreads;
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
   matMult(A, B, C);
-  const endTime = getCurrentTime();
+  const endTime = timeSinceEpoch().totalSeconds();
 
   writeln("Time taken for matrix multiplication with ", numThreads, " threads: ", (endTime - startTime): real, " seconds");
 }
