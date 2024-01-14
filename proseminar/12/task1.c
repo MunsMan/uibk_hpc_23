@@ -33,21 +33,29 @@ int main(int argc, char** argv) {
 	// Individual file pointer
 	start = MPI_Wtime();
 	individual_file_pointer(rank, buffer, buf_size);
-	printf("Individual file pointer: %fs\n", MPI_Wtime() - start);
+	MPI_Barrier(MPI_COMM_WORLD);
+	if(rank == 0) {
+		printf("Individual file pointer: %fs\n", MPI_Wtime() - start);
+	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Shared file pointer non-collective
 	start = MPI_Wtime();
 	shared_file_pointer_non_collective(rank, buffer, buf_size);
-	printf("Shared file pointer non-collective: %fs\n", MPI_Wtime() - start);
+	MPI_Barrier(MPI_COMM_WORLD);
+	if(rank == 0) {
+		printf("Shared file pointer non-collective: %fs\n", MPI_Wtime() - start);
+	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Shared file pointer collective
 	start = MPI_Wtime();
 	shared_file_pointer_collective(rank, buffer, buf_size);
-	printf("Shared file pointer collective: %fs\n", MPI_Wtime() - start);
-
 	MPI_Barrier(MPI_COMM_WORLD);
+	if(rank == 0) {
+		printf("Shared file pointer collective: %fs\n", MPI_Wtime() - start);
+	}
+
 	// Clean up
 	free(buffer);
 	MPI_Finalize();
@@ -67,6 +75,7 @@ void individual_file(int rank, char* buffer, int buf_size) {
 	}
 	fseeko(file, offset, SEEK_SET);
 	fwrite(buffer, sizeof(char), buf_size, file);
+	fflush(file);
 
 	for(int i = 0; i < 9; ++i) {
 		// Read Operation
@@ -75,6 +84,7 @@ void individual_file(int rank, char* buffer, int buf_size) {
 		// Write Operation
 		fseeko(file, offset, SEEK_SET);
 		fwrite(buffer, sizeof(char), buf_size, file);
+		fflush(file);
 	}
 	fclose(file);
 }
