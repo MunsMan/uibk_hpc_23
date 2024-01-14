@@ -2,18 +2,14 @@ MPICC=mpicc
 CC_FLAGS=-O3 -std=gnu11 -Wall -Wextra -pedantic -lm
 
 .PHONY: all
-all: individual single-file-individual-fp task2
+all: task1 task2
 
-individual: individual.c
+task1: task1.c
 	@$(MPICC) $(CC_FLAGS) -o $@ $^
-
-single-file-individual-fp: single-file-individual-fp.c
-	@$(MPICC) $(CC_FLAGS) -o $@ $^
-
 
 task2: task2.c
 	@$(MPICC) $(CC_FLAGS) -o $@ $^
 
 .PHONY: clean
 clean:
-	rm -f individual *file.txt single-file-individual-fp task2
+	rm -f task1 task2 *_file*
