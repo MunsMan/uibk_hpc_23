@@ -27,7 +27,9 @@ int main(int argc, char** argv) {
 	double start = MPI_Wtime();
 	individual_file(rank, buffer, buf_size);
 	printf("Individual file: %fs\n", MPI_Wtime() - start);
-
+	char filename[100];
+	sprintf(filename, "%s/tmp-files/individual_file_%d", getenv("SCRATCH"), rank);
+	remove(filename);
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	// Individual file pointer
@@ -36,6 +38,9 @@ int main(int argc, char** argv) {
 	MPI_Barrier(MPI_COMM_WORLD);
 	if(rank == 0) {
 		printf("Individual file pointer: %fs\n", MPI_Wtime() - start);
+		char filename[100];
+		sprintf(filename, "%s/tmp-files/individual_file_pointer", getenv("SCRATCH"));
+		remove(filename);
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -45,6 +50,9 @@ int main(int argc, char** argv) {
 	MPI_Barrier(MPI_COMM_WORLD);
 	if(rank == 0) {
 		printf("Shared file pointer non-collective: %fs\n", MPI_Wtime() - start);
+		char filename[100];
+		sprintf(filename, "%s/tmp-files/individual_file_pointer_non_collective", getenv("SCRATCH"));
+		remove(filename);
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -54,6 +62,9 @@ int main(int argc, char** argv) {
 	MPI_Barrier(MPI_COMM_WORLD);
 	if(rank == 0) {
 		printf("Shared file pointer collective: %fs\n", MPI_Wtime() - start);
+		char filename[100];
+		sprintf(filename, "%s/tmp-files/individual_file_pointer_collective", getenv("SCRATCH"));
+		remove(filename);
 	}
 
 	// Clean up
