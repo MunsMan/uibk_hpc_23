@@ -9,15 +9,16 @@ int main(int argc, char** argv) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-	if(argc != 2) {
+	if(argc != 3) {
 		if(rank == 0) {
-			fprintf(stderr, "Usage: %s <buffer_size>\n", argv[0]);
+			fprintf(stderr, "Usage: %s <buffer_size> <base_dir>\n", argv[0]);
 		}
 		MPI_Finalize();
 		return 1;
 	}
 
 	int buffer_size = atoi(argv[1]);
+	char* base_dir = argv[2];
 	char* buffer = (char*)malloc(buffer_size * sizeof(char));
 
 	for(int i = 0; i < buffer_size; ++i) {
@@ -25,7 +26,7 @@ int main(int argc, char** argv) {
 	}
 
 	char filename[256];
-	sprintf(filename, "rank_%d_file.txt", rank);
+	sprintf(filename, "%s/rank_%d_file.txt", base_dir, rank);
 	FILE* file = fopen(filename, "w");
 	if(file == NULL) {
 		perror("Error opening file");
@@ -37,6 +38,15 @@ int main(int argc, char** argv) {
 	double start_time = MPI_Wtime();
 
 	fwrite(buffer, sizeof(char), buffer_size, file);
+	fflush(file);
+
+	for(int i = 0; i < 9; i++) {
+		fseek(file, 0, SEEK_SET);
+		fread(buffer, sizeof(char), buffer_size, file);
+		fseek(file, 0, SEEK_SET);
+		fwrite(buffer, sizeof(char), buffer_size, file);
+		fflush(file);
+	}
 
 	double end_time = MPI_Wtime();
 
