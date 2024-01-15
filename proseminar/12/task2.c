@@ -1,5 +1,5 @@
-
 #include <mpi.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,9 +18,9 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	int buffer_size_per_rank = atoi(argv[1]);
+	uint64_t buffer_size_per_rank = strtoul(argv[1], NULL, 10);
 	char* base_dir = argv[2];
-	int total_size = buffer_size_per_rank * size;
+	uint64_t total_size = buffer_size_per_rank * size;
 	char* buffer = (char*)malloc(buffer_size_per_rank * sizeof(char));
 	char* total_buffer = NULL;
 	FILE* file = NULL;
@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
 
 	if(rank == 0) {
 		end_time = MPI_Wtime();
-		printf("Total time for %d bytes: %f seconds\n", total_size, end_time - start_time);
+		printf("Total time for %lld bytes: %f seconds\n", total_size, end_time - start_time);
 		fclose(file);
 		free(total_buffer);
 	}
