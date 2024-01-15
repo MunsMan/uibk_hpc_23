@@ -1,11 +1,12 @@
 #include <mpi.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-void individual_file(int rank, char* buffer, int buf_size);
-void individual_file_pointer(int rank, char* buffer, int buf_size);
-void shared_file_pointer_non_collective(int rank, char* buffer, int buf_size);
-void shared_file_pointer_collective(int rank, char* buffer, int buf_size);
+void individual_file(int rank, char* buffer, uint64_t buf_size, char* base_dir);
+void individual_file_pointer(int rank, char* buffer, uint64_t buf_size, char* base_dir);
+void shared_file_pointer_non_collective(int rank, char* buffer, uint64_t buf_size, char* base_dir);
+void shared_file_pointer_collective(int rank, char* buffer, uint64_t buf_size, char* base_dir);
 
 int main(int argc, char** argv) {
 	MPI_Init(&argc, &argv);
@@ -15,55 +16,65 @@ int main(int argc, char** argv) {
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
 	// Define buffer size and allocate memory
-	int buf_size = 64 * 1024 * 1024;
+	if(argc != 3) {
+		if(rank == 0) {
+			fprintf(stderr, "Usage: %s <buffer_size> <base_dir>\n", argv[0]);
+		}
+		MPI_Finalize();
+		return 1;
+	}
+
+	uint64_t buf_size = strtoul(argv[1], NULL, 10);
+	char* base_dir = argv[2];
+
 	char* buffer = (char*)malloc(buf_size * sizeof(char));
 
 	// Initialize buffer based on rank
-	for(int i = 0; i < buf_size; ++i) {
+	for(uint64_t i = 0; i < buf_size; ++i) {
 		buffer[i] = 'A' + rank;
 	}
 
 	// Individual file
 	double start = MPI_Wtime();
-	individual_file(rank, buffer, buf_size);
+	individual_file(rank, buffer, buf_size, base_dir);
 	printf("Individual file: %fs\n", MPI_Wtime() - start);
 	char filename[100];
-	sprintf(filename, "%s/tmp-files/individual_file_%d", getenv("SCRATCH"), rank);
+	sprintf(filename, "%s/individual_file_%d", base_dir, rank);
 	remove(filename);
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	// Individual file pointer
 	start = MPI_Wtime();
-	individual_file_pointer(rank, buffer, buf_size);
+	individual_file_pointer(rank, buffer, buf_size, base_dir);
 	MPI_Barrier(MPI_COMM_WORLD);
 	if(rank == 0) {
 		printf("Individual file pointer: %fs\n", MPI_Wtime() - start);
 		char filename[100];
-		sprintf(filename, "%s/tmp-files/individual_file_pointer", getenv("SCRATCH"));
+		sprintf(filename, "%s/individual_file_pointer", base_dir);
 		remove(filename);
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Shared file pointer non-collective
 	start = MPI_Wtime();
-	shared_file_pointer_non_collective(rank, buffer, buf_size);
+	shared_file_pointer_non_collective(rank, buffer, buf_size, base_dir);
 	MPI_Barrier(MPI_COMM_WORLD);
 	if(rank == 0) {
 		printf("Shared file pointer non-collective: %fs\n", MPI_Wtime() - start);
 		char filename[100];
-		sprintf(filename, "%s/tmp-files/individual_file_pointer_non_collective", getenv("SCRATCH"));
+		sprintf(filename, "%s/individual_file_pointer_non_collective", base_dir);
 		remove(filename);
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Shared file pointer collective
 	start = MPI_Wtime();
-	shared_file_pointer_collective(rank, buffer, buf_size);
+	shared_file_pointer_collective(rank, buffer, buf_size, base_dir);
 	MPI_Barrier(MPI_COMM_WORLD);
 	if(rank == 0) {
 		printf("Shared file pointer collective: %fs\n", MPI_Wtime() - start);
 		char filename[100];
-		sprintf(filename, "%s/tmp-files/individual_file_pointer_collective", getenv("SCRATCH"));
+		sprintf(filename, "%s/individual_file_pointer_collective", base_dir);
 		remove(filename);
 	}
 
@@ -74,9 +85,9 @@ int main(int argc, char** argv) {
 	return EXIT_SUCCESS;
 }
 
-void individual_file(int rank, char* buffer, int buf_size) {
+void individual_file(int rank, char* buffer, uint64_t buf_size, char* base_dir) {
 	char filename[100];
-	sprintf(filename, "%s/tmp-files/individual_file_%d", getenv("SCRATCH"), rank);
+	sprintf(filename, "%s/individual_file_%d", base_dir, rank);
 	// Initialize file
 	FILE* file = fopen(filename, "wr+");
 	off_t offset = 0;
@@ -100,9 +111,9 @@ void individual_file(int rank, char* buffer, int buf_size) {
 	fclose(file);
 }
 
-void individual_file_pointer(int rank, char* buffer, int buf_size) {
+void individual_file_pointer(int rank, char* buffer, uint64_t buf_size, char* base_dir) {
 	char filename[100];
-	sprintf(filename, "%s/tmp-files/individual_file_pointer", getenv("SCRATCH"));
+	sprintf(filename, "%s/individual_file_pointer", base_dir);
 	MPI_File file;
 	MPI_Status status;
 	MPI_File_open(MPI_COMM_SELF, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &file);
@@ -127,9 +138,9 @@ void individual_file_pointer(int rank, char* buffer, int buf_size) {
 	MPI_File_close(&file);
 }
 
-void shared_file_pointer_non_collective(int rank, char* buffer, int buf_size) {
+void shared_file_pointer_non_collective(int rank, char* buffer, uint64_t buf_size, char* base_dir) {
 	char filename[100];
-	sprintf(filename, "%s/tmp-files/individual_file_pointer_non_collective", getenv("SCRATCH"));
+	sprintf(filename, "%s/individual_file_pointer_non_collective", base_dir);
 	MPI_File file;
 	MPI_Status status;
 	MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &file);
@@ -154,9 +165,9 @@ void shared_file_pointer_non_collective(int rank, char* buffer, int buf_size) {
 	MPI_File_close(&file);
 }
 
-void shared_file_pointer_collective(int rank, char* buffer, int buf_size) {
+void shared_file_pointer_collective(int rank, char* buffer, uint64_t buf_size, char* base_dir) {
 	char filename[100];
-	sprintf(filename, "%s/tmp-files/individual_file_pointer_collective", getenv("SCRATCH"));
+	sprintf(filename, "%s/individual_file_pointer_collective", base_dir);
 	MPI_File file;
 	MPI_Status status;
 	MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &file);

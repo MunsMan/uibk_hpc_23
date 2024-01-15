@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 	char* total_buffer = NULL;
 	FILE* file = NULL;
 
-	for(int i = 0; i < buffer_size_per_rank; ++i) {
+	for(uint64_t i = 0; i < buffer_size_per_rank; ++i) {
 		buffer[i] = (char)(rank + 'A');
 	}
 
