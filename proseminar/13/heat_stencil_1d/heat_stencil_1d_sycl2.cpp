@@ -66,11 +66,28 @@ int main(int argc, char **argv) {
         std::swap(buffer_a, buffer_b);
 
       if (t % 10000 == 0) {
+
         Domain domain_copy(size_domain);
-        {
-            auto acc = buffer_a.get_access<sycl::access::mode::read>();
-            std::copy(acc.get_pointer(), acc.get_pointer() + size_domain, domain_copy.begin());
-        }
+
+        // The following would work as well and is simppler but since the exercise
+        // explicitly asks for a second kernel, we do not do it this way.
+        // This would worke because sycl internally ensure the synchronization
+        // without needing to call wait
+        // {
+        //     auto acc = buffer_a.get_access<sycl::access::mode::read>();
+        //     std::copy(acc.get_pointer(), acc.get_pointer() + size_domain, domain_copy.begin());
+        // }
+
+        sycl::buffer<Datatype, 1> host_buffer(domain_copy.data(), sycl::range<1>(size_domain));
+
+        queue.submit([&](sycl::handler &cgh) {
+            auto acc_device = buffer_a.get_access<sycl::access::mode::read>(cgh);
+            auto acc_host = host_buffer.get_access<sycl::access::mode::write>(cgh);
+
+            cgh.parallel_for(sycl::range<1>(size_domain), [=](sycl::id<1> idx) {
+                acc_host[idx] = acc_device[idx];
+                });
+            }).wait();
 
         std::cout << "Step t=" << t << "\t";
         printTemperature(domain_copy);
