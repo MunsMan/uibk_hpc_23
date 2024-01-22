@@ -29,7 +29,13 @@ int main(int argc, char **argv) {
     Domain domain_a(size_domain, 273.0);
     const std::size_t source_x = size_domain / 2;
 
+    std::cout << "Heat Source is at " << source_x << std::endl;
+
     domain_a[source_x] = 273 + 60;
+
+    std::cout << "Initial:\t";
+    printTemperature(domain_a);
+    std::cout << std::endl;
 
     Domain domain_b(size_domain, 273.0);
 
@@ -58,6 +64,18 @@ int main(int argc, char **argv) {
             });
         });
         std::swap(buffer_a, buffer_b);
+
+      if (t % 10000 == 0) {
+        Domain domain_copy(size_domain);
+        {
+            auto acc = buffer_a.get_access<sycl::access::mode::read>();
+            std::copy(acc.get_pointer(), acc.get_pointer() + size_domain, domain_copy.begin());
+        }
+
+        std::cout << "Step t=" << t << "\t";
+        printTemperature(domain_copy);
+        std::cout << std::endl;
+      }
     }
 
     queue.wait_and_throw();
@@ -70,6 +88,7 @@ int main(int argc, char **argv) {
         std::copy(acc_a.get_pointer(), acc_a.get_pointer() + size_domain, domain_a.begin());
     }
 
+    std::cout << "\t\t";
     printTemperature(domain_a);
     std::cout << std::endl;
 

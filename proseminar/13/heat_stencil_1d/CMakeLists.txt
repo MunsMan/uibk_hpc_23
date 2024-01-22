@@ -11,6 +11,9 @@ find_package(AdaptiveCpp REQUIRED)
 add_executable(heat_stencil_1d_sycl heat_stencil_1d_sycl.cpp)
 add_sycl_to_target(TARGET heat_stencil_1d_sycl)
 
+add_executable(heat_stencil_1d_sycl2 heat_stencil_1d_sycl2.cpp)
+add_sycl_to_target(TARGET heat_stencil_1d_sycl2)
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
